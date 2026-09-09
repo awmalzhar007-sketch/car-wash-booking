@@ -108,16 +108,30 @@ export function normalizePhone(phone: string): string {
 // e.g. 01023525785
 export const EGYPTIAN_PHONE_REGEX = /^01[0125][0-9]{8}$/;
 
+export function normalizeEgyptianPhone(phone: string): string {
+  let digitsOnly = (phone || "").replace(/\D/g, "");
+  if (digitsOnly.startsWith("0020")) {
+    digitsOnly = digitsOnly.substring(4);
+  } else if (digitsOnly.startsWith("20") && digitsOnly.length === 12) {
+    digitsOnly = digitsOnly.substring(2);
+  }
+  if (!digitsOnly.startsWith("0") && digitsOnly.length === 10) {
+    digitsOnly = "0" + digitsOnly;
+  }
+  return digitsOnly;
+}
+
 export function isValidEgyptianPhone(phone: string): boolean {
-  const digitsOnly = phone.replace(/\D/g, "");
-  return EGYPTIAN_PHONE_REGEX.test(digitsOnly);
+  if (!phone) return false;
+  const normalized = normalizeEgyptianPhone(phone);
+  return EGYPTIAN_PHONE_REGEX.test(normalized);
 }
 
 // Shared zod schema for validating Egyptian phone numbers in API routes
 export const egyptianPhoneSchema = z
   .string()
   .refine(isValidEgyptianPhone, {
-    message: "Phone number must be 11 digits and start with 010, 011, 012, or 015",
+    message: "Phone number must be a valid Egyptian mobile number (e.g., 010..., 011..., 012..., 015... or +20...)",
   });
 
 import crypto from "crypto";

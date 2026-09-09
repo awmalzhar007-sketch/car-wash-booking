@@ -19,6 +19,7 @@ prisma/*.db
 # Build
 build/
 dist/
+*.tsbuildinfo
 
 # Logs
 *.log

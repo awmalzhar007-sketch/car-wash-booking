@@ -28,9 +28,13 @@ import {
   Sparkles,
   Trophy,
   CalendarDays,
+  Edit2,
+  Search,
+  Filter,
+  DollarSign,
 } from "lucide-react";
 import { BookingStatus, StaffBookingDetail } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, isValidEgyptianPhone, parseTimeToMinutes, formatMinutesToTime } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { translateCarWashText } from "@/lib/i18n/translator";
@@ -60,10 +64,34 @@ export default function StaffDashboardPage() {
     return null;
   });
 
-  // Active view: TIMELINE or LIST or PRICING or DAILY_SUMMARY or SETTINGS
+  // Active view: TIMELINE or LIST or PRICING or DAILY_SUMMARY or MONTHLY_REVENUE or SETTINGS
   const [viewTab, setViewTab] = useState<
-    "TIMELINE" | "LIST" | "PRICING" | "DAILY_SUMMARY" | "SETTINGS"
+    "TIMELINE" | "LIST" | "PRICING" | "DAILY_SUMMARY" | "MONTHLY_REVENUE" | "SETTINGS"
   >("TIMELINE");
+
+  // Search filter for bookings
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Edit Booking Modal state
+  const [editingBooking, setEditingBooking] = useState<any | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editBookingDate, setEditBookingDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editSelectedServiceIds, setEditSelectedServiceIds] = useState<string[]>([]);
+  const [editAssignedBayId, setEditAssignedBayId] = useState("");
+  const [editStatus, setEditStatus] = useState<string>("CONFIRMED");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Monthly Revenue Dashboard state
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+  });
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState<any>(null);
+  const [monthlyRevenueLoading, setMonthlyRevenueLoading] = useState(false);
+  const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
 
   // Services & Pricing state — staff own the price AND duration for each
   // service type (the type itself is defined by the Super Admin).
@@ -220,7 +248,83 @@ export default function StaffDashboardPage() {
     if (viewTab === "PRICING" && services.length === 0 && !servicesLoading) {
       loadServices();
     }
-  }, [viewTab]);
+    if (viewTab === "MONTHLY_REVENUE") {
+      loadMonthlyRevenue(selectedMonth);
+    }
+  }, [viewTab, selectedMonth]);
+
+  const loadMonthlyRevenue = async (month?: string) => {
+    try {
+      setMonthlyRevenueLoading(true);
+      setMonthlyRevenueError(null);
+      const targetMonth = month || selectedMonth;
+      const res = await fetch(`/api/staff/revenue?month=${encodeURIComponent(targetMonth)}`);
+      const json = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/staff/login");
+          return;
+        }
+        throw new Error(json.error || "Failed to load monthly revenue");
+      }
+      setMonthlyRevenueData(json);
+    } catch (err: any) {
+      setMonthlyRevenueError(err.message || "Failed to load monthly revenue");
+    } finally {
+      setMonthlyRevenueLoading(false);
+    }
+  };
+
+  const handleOpenEditBooking = (booking: any) => {
+    setEditingBooking(booking);
+    setEditCustomerName(booking.customerName || "");
+    setEditCustomerPhone(booking.customerPhone || "");
+    setEditBookingDate(booking.bookingDate || "");
+    setEditStartTime(booking.startTime || "");
+    setEditSelectedServiceIds((booking.services || []).map((s: any) => s.id));
+    setEditAssignedBayId(booking.assignedBayId || (data?.bays?.[0]?.id || ""));
+    setEditStatus(booking.status || "CONFIRMED");
+    setEditError(null);
+    if (services.length === 0 && !servicesLoading) {
+      loadServices();
+    }
+  };
+
+  const handleSaveEditBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBooking) return;
+    try {
+      setSavingEdit(true);
+      setEditError(null);
+      const res = await fetch(`/api/staff/bookings/${editingBooking.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: editCustomerName.trim(),
+          customerPhone: editCustomerPhone.trim(),
+          bookingDate: editBookingDate,
+          startTime: editStartTime,
+          selectedServiceIds: editSelectedServiceIds,
+          assignedBayId: editAssignedBayId,
+          status: editStatus,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to update booking");
+      }
+      setEditingBooking(null);
+      setSelectedBooking(null);
+      await loadSchedule(true);
+      if (viewTab === "MONTHLY_REVENUE" || viewTab === "DAILY_SUMMARY") {
+        await loadMonthlyRevenue(selectedMonth);
+      }
+    } catch (err: any) {
+      setEditError(err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handleSaveService = async (serviceId: string) => {
     const priceDraft = priceDrafts[serviceId];
@@ -545,15 +649,15 @@ export default function StaffDashboardPage() {
           </button>
           <button
             type="button"
-            onClick={() => setViewTab("DAILY_SUMMARY")}
+            onClick={() => setViewTab("MONTHLY_REVENUE")}
             className={`text-start rounded-2xl p-4 shadow-sm transition-all border ${
-              viewTab === "DAILY_SUMMARY"
+              viewTab === "MONTHLY_REVENUE"
                 ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-400/40"
                 : "bg-blue-50 hover:bg-blue-100/80 border-blue-200 text-blue-900"
             }`}
           >
             <p className={`text-xs font-bold flex items-center gap-1 ${
-              viewTab === "DAILY_SUMMARY" ? "text-blue-100" : "text-blue-700"
+              viewTab === "MONTHLY_REVENUE" ? "text-blue-100" : "text-blue-700"
             }`}>
               <TrendingUp className="w-3.5 h-3.5" />
               {t("staff_monthly_revenue")}
@@ -640,6 +744,17 @@ export default function StaffDashboardPage() {
             >
               <Wallet className="w-3.5 h-3.5" />
               {t("staff_tab_daily_summary")}
+            </button>
+            <button
+              onClick={() => setViewTab("MONTHLY_REVENUE")}
+              className={`text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                viewTab === "MONTHLY_REVENUE"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-white text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              {t("staff_tab_monthly_revenue")}
             </button>
             <button
               onClick={() => setViewTab("SETTINGS")}
@@ -753,23 +868,36 @@ export default function StaffDashboardPage() {
                                     : "bg-slate-100 border-slate-200 text-slate-400"
                                 }`}
                               >
-                                <div className="flex justify-between items-start">
+                                <div className="flex justify-between items-start gap-1">
                                   <span className="font-bold text-slate-900 text-xs">
                                     {booking.bookingNumber}
                                   </span>
-                                  <span
-                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                      booking.status === "CONFIRMED"
-                                        ? "bg-blue-600 text-white"
-                                        : booking.status === "WASHING"
-                                        ? "bg-amber-500 text-white"
-                                        : booking.status === "COMPLETED"
-                                        ? "bg-emerald-600 text-white"
-                                        : "bg-slate-300 text-slate-700"
-                                    }`}
-                                  >
-                                    {booking.status}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEditBooking(booking);
+                                      }}
+                                      className="p-1 hover:bg-white/80 rounded text-slate-600 hover:text-blue-600 transition-colors"
+                                      title={t("staff_action_edit_booking")}
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </button>
+                                    <span
+                                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                        booking.status === "CONFIRMED"
+                                          ? "bg-blue-600 text-white"
+                                          : booking.status === "WASHING"
+                                          ? "bg-amber-500 text-white"
+                                          : booking.status === "COMPLETED"
+                                          ? "bg-emerald-600 text-white"
+                                          : "bg-slate-300 text-slate-700"
+                                      }`}
+                                    >
+                                      {booking.status}
+                                    </span>
+                                  </div>
                                 </div>
                                 <p className="font-semibold text-slate-800 mt-1 truncate">
                                   {booking.customerName}
@@ -813,41 +941,71 @@ export default function StaffDashboardPage() {
         {viewTab === "LIST" && (
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 space-y-4 animate-fade-in">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-bold text-slate-900">
-                {language === "ar"
-                  ? `حجوزات ${data?.date === data?.today ? "اليوم" : `يوم (${data?.date || selectedDate})`}`
-                  : `Bookings for ${data?.date === data?.today ? "Today" : data?.date || selectedDate}`}
-              </h2>
-              <div className="flex gap-1 overflow-x-auto text-xs">
-                {["ALL", "CONFIRMED", "WASHING", "COMPLETED", "CANCELLED", "NO_SHOW"].map(
-                  (st) => {
-                    const label =
-                      st === "ALL"
-                        ? t("all")
-                        : st === "WASHING"
-                        ? t("status_IN_PROGRESS")
-                        : t(`status_${st}` as any, st);
-                    return (
-                      <button
-                        key={st}
-                        onClick={() => setListFilter(st)}
-                        className={`px-3 py-1 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-                          listFilter === st
-                            ? "bg-slate-900 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  }
-                )}
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">
+                  {language === "ar"
+                    ? `حجوزات ${data?.date === data?.today ? "اليوم" : `يوم (${data?.date || selectedDate})`}`
+                    : `Bookings for ${data?.date === data?.today ? "Today" : data?.date || selectedDate}`}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {language === "ar" ? "إدارة وتعديل حجوزات العملاء ومحطات الغسيل" : "Manage, search, and edit customer bookings"}
+                </p>
               </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-72">
+                <Search className={`w-3.5 h-3.5 text-slate-400 absolute ${dir === "rtl" ? "right-3" : "left-3"} top-2.5`} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("staff_search_bookings")}
+                  className={`w-full py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                    dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Status Filters */}
+            <div className="flex gap-1 overflow-x-auto text-xs pb-1">
+              {["ALL", "CONFIRMED", "WASHING", "COMPLETED", "CANCELLED", "NO_SHOW"].map(
+                (st) => {
+                  const label =
+                    st === "ALL"
+                      ? t("all")
+                      : st === "WASHING"
+                      ? t("status_IN_PROGRESS")
+                      : t(`status_${st}` as any, st);
+                  return (
+                    <button
+                      key={st}
+                      onClick={() => setListFilter(st)}
+                      className={`px-3 py-1 rounded-lg font-semibold transition-colors whitespace-nowrap ${
+                        listFilter === st
+                          ? "bg-slate-900 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                }
+              )}
             </div>
 
             <div className="divide-y divide-slate-100">
               {data?.bookings
-                .filter((b: any) => listFilter === "ALL" || b.status === listFilter)
+                .filter((b: any) => {
+                  const matchesStatus = listFilter === "ALL" || b.status === listFilter;
+                  const q = searchQuery.trim().toLowerCase();
+                  const matchesSearch =
+                    !q ||
+                    b.bookingNumber?.toLowerCase().includes(q) ||
+                    b.customerName?.toLowerCase().includes(q) ||
+                    b.customerPhone?.toLowerCase().includes(q);
+                  return matchesStatus && matchesSearch;
+                })
                 .map((b: any) => (
                   <div
                     key={b.id}
@@ -878,7 +1036,7 @@ export default function StaffDashboardPage() {
                       </div>
                       <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
                         <span className="font-medium text-slate-700">{b.customerName}</span>
-                        <span dir="ltr">{b.customerPhone}</span>
+                        <span dir="ltr" className="font-mono">{b.customerPhone}</span>
                         <span>{language === "ar" ? "الوقت:" : "Time:"} {formatTime(b.startTime)}</span>
                         <span className="text-slate-400">~{b.estimatedDuration} {t("mins")}</span>
                         {b.totalPrice > 0 && (
@@ -889,9 +1047,40 @@ export default function StaffDashboardPage() {
                       </div>
                     </div>
 
-                    <ChevronRight className={`w-4 h-4 text-slate-400 ${dir === "rtl" ? "rotate-180" : ""}`} />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditBooking(b);
+                        }}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-blue-200"
+                        title={t("staff_action_edit_booking")}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{t("staff_action_edit_booking")}</span>
+                      </button>
+                      <ChevronRight className={`w-4 h-4 text-slate-400 ${dir === "rtl" ? "rotate-180" : ""}`} />
+                    </div>
                   </div>
                 ))}
+
+              {data?.bookings?.filter((b: any) => {
+                const matchesStatus = listFilter === "ALL" || b.status === listFilter;
+                const q = searchQuery.trim().toLowerCase();
+                const matchesSearch =
+                  !q ||
+                  b.bookingNumber?.toLowerCase().includes(q) ||
+                  b.customerName?.toLowerCase().includes(q) ||
+                  b.customerPhone?.toLowerCase().includes(q);
+                return matchesStatus && matchesSearch;
+              }).length === 0 && (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  {language === "ar"
+                    ? "لا توجد نتائج تطابق خيارات البحث والتصفية."
+                    : "No bookings found matching search criteria."}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1715,6 +1904,271 @@ export default function StaffDashboardPage() {
           </div>
         )}
 
+        {/* MONTHLY REVENUE DASHBOARD TAB */}
+        {viewTab === "MONTHLY_REVENUE" && (
+          <div className="space-y-6">
+            {/* Header with Month Selector & Refresh */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900">
+                      {t("staff_tab_monthly_revenue")}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {language === "ar"
+                        ? "تحليل مالي للأرباح والحجوزات المكتملة فقط لهذا الشهر"
+                        : "Financial overview calculated strictly from completed bookings"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Month Picker */}
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                      loadMonthlyRevenue(e.target.value);
+                    }}
+                    className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  onClick={() => loadMonthlyRevenue(selectedMonth)}
+                  disabled={monthlyRevenueLoading}
+                  className="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors disabled:opacity-50"
+                  title="Refresh"
+                >
+                  <RefreshCw className={`w-4 h-4 ${monthlyRevenueLoading ? "animate-spin text-emerald-600" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            {monthlyRevenueError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{monthlyRevenueError}</span>
+              </div>
+            )}
+
+            {monthlyRevenueLoading && !monthlyRevenueData ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100">
+                <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-3" />
+                <p className="text-xs text-slate-500 font-medium">
+                  {language === "ar" ? "جاري تحميل بيانات الإيرادات..." : "Calculating revenue analytics..."}
+                </p>
+              </div>
+            ) : monthlyRevenueData ? (
+              <>
+                {/* KPI Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Total Revenue */}
+                  <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-6 -mt-6 pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-slate-500">
+                        {t("staff_monthly_total_revenue")}
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <DollarSign className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      {formatPrice(monthlyRevenueData.totalRevenue || 0)}
+                    </div>
+                    <div className="mt-2 text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{language === "ar" ? "من الحجوزات المكتملة فقط" : "Completed bookings only"}</span>
+                    </div>
+                  </div>
+
+                  {/* Completed Bookings */}
+                  <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-6 -mt-6 pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-slate-500">
+                        {t("staff_monthly_completed_count")}
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      {monthlyRevenueData.completedCount || 0}
+                    </div>
+                    <div className="mt-2 text-[11px] text-slate-500">
+                      {monthlyRevenueData.cancelledCount > 0
+                        ? `${monthlyRevenueData.cancelledCount} ${language === "ar" ? "ملغية (مستبعدة)" : "cancelled (excluded)"}`
+                        : language === "ar" ? "لا توجد حجوزات ملغية" : "Zero cancellations"}
+                    </div>
+                  </div>
+
+                  {/* Average Revenue Per Booking */}
+                  <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-6 -mt-6 pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-slate-500">
+                        {t("staff_monthly_avg_booking")}
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      {formatPrice(monthlyRevenueData.averageRevenuePerBooking || 0)}
+                    </div>
+                    <div className="mt-2 text-[11px] text-purple-700 font-semibold">
+                      {language === "ar" ? "متوسط كل عملية غسيل" : "Per completed wash"}
+                    </div>
+                  </div>
+
+                  {/* Best Performing Day */}
+                  <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-6 -mt-6 pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-slate-500">
+                        {t("staff_best_month_day")}
+                      </span>
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                        <Trophy className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-lg font-black text-slate-900 tracking-tight truncate">
+                      {monthlyRevenueData.bestDay ? formatPrice(monthlyRevenueData.bestDay.revenue) : "—"}
+                    </div>
+                    <div className="mt-2 text-[11px] text-amber-800 font-semibold truncate">
+                      {monthlyRevenueData.bestDay
+                        ? `${monthlyRevenueData.bestDay.displayDate || monthlyRevenueData.bestDay.date} (${monthlyRevenueData.bestDay.count} ${t("bookings_badge")})`
+                        : language === "ar" ? "لا توجد بيانات بعد" : "No data yet"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Breakdown & Daily Breakdown Grids */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Revenue by Car Wash / Service Type */}
+                  <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-blue-600" />
+                          <span>{t("staff_revenue_by_service")}</span>
+                        </h3>
+                        <p className="text-[11px] text-slate-400">
+                          {language === "ar" ? "حصة كل خدمة من إجمالي الدخل" : "Share of total monthly income by service"}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
+                        {monthlyRevenueData.revenueByService?.length || 0} {language === "ar" ? "خدمة" : "services"}
+                      </span>
+                    </div>
+
+                    {(!monthlyRevenueData.revenueByService || monthlyRevenueData.revenueByService.length === 0) ? (
+                      <div className="py-12 text-center text-slate-400 text-xs">
+                        {language === "ar" ? "لا توجد إيرادات مسجلة لهذا الشهر" : "No revenue recorded for this month yet."}
+                      </div>
+                    ) : (
+                      <div className="space-y-3.5">
+                        {monthlyRevenueData.revenueByService.map((svc: any) => (
+                          <div key={svc.id || svc.name} className="space-y-1.5 bg-slate-50/60 p-3 rounded-2xl border border-slate-100">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-slate-800">
+                                {tServiceName(svc.name)}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-500 text-[11px]">
+                                  {svc.count} {language === "ar" ? "مرة" : "times"}
+                                </span>
+                                <span className="font-black text-slate-900">
+                                  {formatPrice(svc.totalRevenue)}
+                                </span>
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md">
+                                  {svc.percentage}%
+                                </span>
+                              </div>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.max(svc.percentage, 3)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Daily Revenue Breakdown */}
+                  <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <CalendarDays className="w-4 h-4 text-emerald-600" />
+                          <span>{t("staff_daily_breakdown")}</span>
+                        </h3>
+                        <p className="text-[11px] text-slate-400">
+                          {language === "ar" ? "سجل الدخل والحجوزات لكل يوم" : "Daily revenue and wash count"}
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
+                        {monthlyRevenueData.revenueByDay?.length || 0} {language === "ar" ? "يوم نشط" : "active days"}
+                      </span>
+                    </div>
+
+                    {(!monthlyRevenueData.revenueByDay || monthlyRevenueData.revenueByDay.length === 0) ? (
+                      <div className="py-12 text-center text-slate-400 text-xs">
+                        {language === "ar" ? "لا توجد حجوزات مكتملة في هذا الشهر" : "No completed bookings found for this month."}
+                      </div>
+                    ) : (
+                      <div className="max-h-[340px] overflow-y-auto space-y-2 pr-1">
+                        {monthlyRevenueData.revenueByDay.map((day: any) => (
+                          <div
+                            key={day.date}
+                            className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100/80 transition-colors border border-slate-100 text-xs"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-[11px]">
+                                {day.date.split("-")[2]}
+                              </div>
+                              <div>
+                                <span className="font-bold text-slate-900 block">
+                                  {day.displayDate || day.date}
+                                </span>
+                                <span className="text-[11px] text-slate-500">
+                                  {day.count} {t("bookings_badge")}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-black text-slate-900">
+                                {formatPrice(day.revenue)}
+                              </div>
+                              <span className="text-[10px] text-slate-400">
+                                {day.percentage}% {language === "ar" ? "من الشهر" : "of month"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        )}
+
         {/* STATUS ACTION MODAL */}
         {selectedBooking && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
@@ -1783,6 +2237,20 @@ export default function StaffDashboardPage() {
                   </div>
                 )}
               </div>
+
+              {/* Edit Full Booking Details Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const b = selectedBooking;
+                  setSelectedBooking(null);
+                  handleOpenEditBooking(b);
+                }}
+                className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors border border-blue-200 shadow-2xs"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>{t("staff_action_edit_booking")}</span>
+              </button>
 
               {/* Status transition action buttons */}
               <div className="space-y-2 pt-1">
@@ -1867,7 +2335,298 @@ export default function StaffDashboardPage() {
           </div>
         )}
 
+        {/* EDIT BOOKING MODAL */}
+        {editingBooking && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-slate-100">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    {t("staff_edit_booking_title")}
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 mt-1">
+                    {editingBooking.bookingNumber}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {language === "ar" ? "تعديل تفاصيل الحجز والخدمات والمحطة" : "Update booking details, services & wash bay"}
+                  </p>
+                </div>
 
+                <button
+                  type="button"
+                  onClick={() => setEditingBooking(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {editError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs flex items-start gap-2.5 animate-shake">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                  <div>
+                    <span className="font-bold block">{t("staff_conflict_detected")}</span>
+                    <span className="text-[11px]">{editError}</span>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveEditBooking} className="space-y-4">
+                {/* Customer Information */}
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    {language === "ar" ? "بيانات العميل" : "Customer Information"}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        {t("fullName")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editCustomerName}
+                        onChange={(e) => setEditCustomerName(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="Ahmed Mohamed"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-semibold text-slate-600">
+                          {t("staff_change_phone")}
+                        </label>
+                        {editCustomerPhone && (
+                          <span
+                            className={`text-[10px] font-bold ${
+                              isValidEgyptianPhone(editCustomerPhone)
+                                ? "text-emerald-600"
+                                : "text-amber-600"
+                            }`}
+                          >
+                            {isValidEgyptianPhone(editCustomerPhone)
+                              ? (language === "ar" ? "✓ رقم مصري صحيح" : "✓ Valid Egyptian")
+                              : (language === "ar" ? "رقم دولي / غير قياسي" : "International / Non-standard")}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="tel"
+                        required
+                        dir="ltr"
+                        value={editCustomerPhone}
+                        onChange={(e) => setEditCustomerPhone(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="01012345678"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule & Bay Assignment */}
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    {language === "ar" ? "الموعد والمحطة" : "Schedule & Wash Bay"}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        {t("date")}
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={editBookingDate}
+                        onChange={(e) => setEditBookingDate(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        {t("start_time")}
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={editStartTime}
+                        onChange={(e) => setEditStartTime(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        {language === "ar" ? "محطة الغسيل" : "Assigned Bay"}
+                      </label>
+                      <select
+                        value={editAssignedBayId}
+                        onChange={(e) => setEditAssignedBayId(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        {(data?.bays || []).map((bay: any) => (
+                          <option key={bay.id} value={bay.id}>
+                            {bay.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Car Wash / Service Selection */}
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      {t("staff_change_service")}
+                    </p>
+                    <span className="text-[11px] text-blue-600 font-semibold">
+                      {editSelectedServiceIds.length} {language === "ar" ? "محددة" : "selected"}
+                    </span>
+                  </div>
+
+                  {servicesLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                    </div>
+                  ) : services.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2">
+                      {language === "ar" ? "لا توجد خدمات متاحة" : "No services available"}
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                      {services.map((s: any) => {
+                        const isChecked = editSelectedServiceIds.includes(s.id);
+                        return (
+                          <label
+                            key={s.id}
+                            className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                              isChecked
+                                ? "bg-blue-50/80 border-blue-300 text-blue-900 font-semibold shadow-2xs"
+                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEditSelectedServiceIds((prev) => [...prev, s.id]);
+                                  } else {
+                                    setEditSelectedServiceIds((prev) =>
+                                      prev.filter((id) => id !== s.id)
+                                    );
+                                  }
+                                }}
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              />
+                              <span>{tServiceName(s.name)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-slate-400">
+                                {s.durationMinutes} {t("mins")}
+                              </span>
+                              <span className="font-bold text-slate-900">
+                                {formatPrice(s.price)}
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Real-time Recalculated Summary Box */}
+                  {(() => {
+                    const selServices = services.filter((s: any) =>
+                      editSelectedServiceIds.includes(s.id)
+                    );
+                    const calcDuration = selServices.reduce(
+                      (acc: number, s: any) => acc + (s.durationMinutes || 0),
+                      0
+                    );
+                    const calcPrice = selServices.reduce(
+                      (acc: number, s: any) => acc + (s.price || 0),
+                      0
+                    );
+                    let projectedEnd = "";
+                    if (editStartTime && calcDuration > 0) {
+                      const startMins = parseTimeToMinutes(editStartTime);
+                      if (!isNaN(startMins)) {
+                        projectedEnd = formatMinutesToTime(startMins + calcDuration);
+                      }
+                    }
+
+                    return (
+                      <div className="bg-white p-3 rounded-xl border border-blue-200/80 shadow-2xs space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center text-slate-600">
+                          <span>{t("staff_recalculated_duration")}:</span>
+                          <span className="font-bold text-slate-900">
+                            {calcDuration} {t("mins")}{" "}
+                            {projectedEnd && (
+                              <span className="text-blue-600 font-semibold">
+                                ({editStartTime} → {projectedEnd})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-slate-100">
+                          <span>{t("staff_recalculated_price")}:</span>
+                          <span className="font-black text-blue-600 text-sm">
+                            {formatPrice(calcPrice)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Status Selection */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t("my_booking_status_label")}
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
+                  >
+                    <option value="CONFIRMED">{t("status_CONFIRMED")}</option>
+                    <option value="WASHING">{t("status_IN_PROGRESS")}</option>
+                    <option value="COMPLETED">{t("status_COMPLETED")}</option>
+                    <option value="CANCELLED">{t("status_CANCELLED")}</option>
+                    <option value="NO_SHOW">{t("status_NO_SHOW")}</option>
+                  </select>
+                </div>
+
+                {/* Submit & Cancel Buttons */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingBooking(null)}
+                    disabled={savingEdit}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition-colors"
+                  >
+                    {language === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit || editSelectedServiceIds.length === 0}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                  >
+                    {savingEdit ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>{t("staff_save_changes")}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>
