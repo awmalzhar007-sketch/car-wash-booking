@@ -26,6 +26,7 @@ import {
   RotateCcw,
   Car,
   LayoutGrid,
+  Sparkles,
 } from "lucide-react";
 import { BookingStatus, StaffBookingDetail } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -85,6 +86,8 @@ export default function StaffDashboardPage() {
   const [walkInCustomerPhone, setWalkInCustomerPhone] = useState("");
   const [walkInSelectedBayId, setWalkInSelectedBayId] = useState("");
   const [walkInSelectedServiceIds, setWalkInSelectedServiceIds] = useState<string[]>([]);
+  const [walkInTimeMode, setWalkInTimeMode] = useState<"NOW" | "SPECIFIC">("NOW");
+  const [walkInSelectedTime, setWalkInSelectedTime] = useState<string>("");
   const [creatingWalkIn, setCreatingWalkIn] = useState(false);
   const [walkInError, setWalkInError] = useState<string | null>(null);
   const [walkInSuccessMsg, setWalkInSuccessMsg] = useState<string | null>(null);
@@ -112,6 +115,7 @@ export default function StaffDashboardPage() {
           customerPhone,
           selectedServiceIds: walkInSelectedServiceIds,
           bayId: walkInSelectedBayId || undefined,
+          startTime: walkInTimeMode === "SPECIFIC" && walkInSelectedTime ? walkInSelectedTime : undefined,
         }),
       });
 
@@ -125,7 +129,9 @@ export default function StaffDashboardPage() {
       setWalkInCustomerPhone("");
       setWalkInSelectedBayId("");
       setWalkInSelectedServiceIds([]);
-      setWalkInSuccessMsg(language === "ar" ? "تم تسجيل الحجز ودخول السيارة بنجاح!" : "Walk-in booked successfully!");
+      setWalkInTimeMode("NOW");
+      setWalkInSelectedTime("");
+      setWalkInSuccessMsg(language === "ar" ? "تم تسجيل الحجز بنجاح وتحديث الجدول!" : "Walk-in booked successfully!");
       setTimeout(() => setWalkInSuccessMsg(null), 4000);
       await loadSchedule(true);
     } catch (err: any) {
@@ -1641,19 +1647,19 @@ export default function StaffDashboardPage() {
 
         {/* WALK-IN QUICK BOOKING MODAL */}
         {showWalkInModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-auto border border-slate-100">
-              <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-100 animate-scale-up">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-3 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
                     <Car className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900 leading-tight">
-                      {language === "ar" ? "حجز فوري (حضور مباشر الآن)" : "Quick Walk-In Booking"}
+                      {language === "ar" ? "حجز فوري (حضور مباشر)" : "Quick Walk-In Booking"}
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {language === "ar" ? "تسجيل سيارة واصلة للمغسلة حالياً وبدء الغسيل" : "Register an arriving vehicle and assign bay"}
+                      {language === "ar" ? "تسجيل سيارة واصلة للمغسلة وتسكين الحارة" : "Register a vehicle and assign wash bay"}
                     </p>
                   </div>
                 </div>
@@ -1668,13 +1674,13 @@ export default function StaffDashboardPage() {
               </div>
 
               {walkInError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2 font-medium">
+                <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2 font-medium shrink-0">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{walkInError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleCreateWalkIn} className="space-y-4 text-xs">
+              <form onSubmit={handleCreateWalkIn} className="space-y-4 text-xs overflow-y-auto mt-3 pr-1 flex-1">
                 {/* 1. Services Selection */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -1692,45 +1698,44 @@ export default function StaffDashboardPage() {
                     )}
                   </div>
 
-                  {services.length === 0 ? (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-center">
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-blue-600" />
-                      <span>{language === "ar" ? "جاري تحميل باقات الغسيل..." : "Loading services..."}</span>
+                  {(services || []).length === 0 ? (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-center text-xs">
+                      {language === "ar" ? "لا توجد خدمات متاحة حالياً" : "No services available"}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
                       {services.map((service) => {
                         const isSelected = walkInSelectedServiceIds.includes(service.id);
                         return (
                           <button
-                            key={service.id}
                             type="button"
+                            key={service.id}
                             onClick={() => toggleWalkInService(service.id)}
-                            className={`p-3 rounded-xl border-2 text-start transition-all cursor-pointer ${
+                            className={`p-2.5 rounded-xl border text-start flex items-center justify-between transition-all cursor-pointer ${
                               isSelected
-                                ? "border-blue-600 bg-blue-50/70 shadow-xs"
-                                : "border-slate-200 hover:border-blue-300 bg-white"
+                                ? "bg-white border-blue-600 shadow-sm ring-2 ring-blue-500/20"
+                                : "bg-white/80 border-slate-200 hover:border-slate-300"
                             }`}
                           >
-                            <div className="flex justify-between items-start gap-1">
-                              <span className="font-bold text-slate-900 text-xs leading-tight">
-                                {tServiceName(service.name)}
-                              </span>
+                            <div className="flex items-center gap-2">
                               <div
-                                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                                  isSelected
-                                    ? "border-blue-600 bg-blue-600 text-white"
-                                    : "border-slate-300"
+                                className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
+                                  isSelected ? "bg-blue-600 border-blue-600 text-white" : "border-slate-300 bg-white"
                                 }`}
                               >
-                                {isSelected && <Check className="w-2.5 h-2.5" />}
+                                {isSelected && <Check className="w-3 h-3" />}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800 text-xs leading-tight">
+                                  {tServiceName(service.name)}
+                                </p>
                               </div>
                             </div>
-                            <div className="flex justify-between items-center mt-2 text-xs">
+                            <div className="text-end">
                               <span className="font-black text-blue-700">
                                 {formatPrice(service.price)}
                               </span>
-                              <span className="text-slate-400 text-[10px]">
+                              <span className="text-slate-400 text-[10px] block">
                                 ~{service.durationMinutes} {t("mins")}
                               </span>
                             </div>
@@ -1756,7 +1761,7 @@ export default function StaffDashboardPage() {
                       }`}
                     >
                       <option value="">
-                        {language === "ar" ? "توزيع تلقائي لأول حارة متاحة الآن" : "Auto-assign first available bay"}
+                        {language === "ar" ? "توزيع تلقائي لأول حارة متاحة" : "Auto-assign first available bay"}
                       </option>
                       {(data?.bays || []).map((bay: any) => (
                         <option key={bay.id} value={bay.id}>
@@ -1767,11 +1772,124 @@ export default function StaffDashboardPage() {
                   </div>
                 </div>
 
-                {/* 3. Customer Info (Optional & Fast) */}
+                {/* 3. Time Selection (الآن فوري أو اختيار موعد محدد اليوم) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-blue-600" />
+                      {language === "ar" ? "3. موعد الحجز" : "3. Booking Time"}
+                    </label>
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWalkInTimeMode("NOW");
+                          setWalkInSelectedTime("");
+                        }}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          walkInTimeMode === "NOW"
+                            ? "bg-white text-blue-700 shadow-xs"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {language === "ar" ? "⚡ الآن (فوري)" : "⚡ Now (ASAP)"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWalkInTimeMode("SPECIFIC");
+                          if (!walkInSelectedTime) {
+                            const firstAvail = (data?.timeline || []).find((row: any) => {
+                              const isBayAvail = walkInSelectedBayId
+                                ? row.baySlots?.some((b: any) => b.bayId === walkInSelectedBayId && b.available)
+                                : row.baySlots?.some((b: any) => b.available);
+                              return isBayAvail && !row.isPast;
+                            });
+                            if (firstAvail) setWalkInSelectedTime(firstAvail.time);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          walkInTimeMode === "SPECIFIC"
+                            ? "bg-white text-blue-700 shadow-xs"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {language === "ar" ? "🕒 اختيار موعد اليوم" : "🕒 Choose Time"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {walkInTimeMode === "NOW" ? (
+                    <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">
+                            {language === "ar" ? "حجز مباشر للسيارة المتواجدة الآن" : "Direct booking for vehicle now"}
+                          </p>
+                          <p className="text-[10px] text-blue-700">
+                            {language === "ar" ? "يبدأ الغسيل في هذه اللحظة وتسكين الحارة فوراً" : "Starts immediately in the assigned bay"}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-extrabold bg-blue-600 text-white px-2.5 py-1 rounded-lg shrink-0">
+                        {language === "ar" ? "فوري الآن" : "NOW"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <p className="text-[10px] text-slate-500">
+                        {language === "ar"
+                          ? "اختر موعد الغسيل المناسب من مواعيد اليوم المتاحة:"
+                          : "Select an available time slot for today:"}
+                      </p>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-slate-50 rounded-xl border border-slate-200">
+                        {(data?.timeline || []).map((row: any) => {
+                          const isSlotBayAvail = walkInSelectedBayId
+                            ? row.baySlots?.some((b: any) => b.bayId === walkInSelectedBayId && b.available)
+                            : row.baySlots?.some((b: any) => b.available);
+                          const isAvailable = isSlotBayAvail && !row.isPast;
+                          const isSelected = walkInSelectedTime === row.time;
+
+                          return (
+                            <button
+                              key={row.time}
+                              type="button"
+                              disabled={!isAvailable}
+                              onClick={() => setWalkInSelectedTime(row.time)}
+                              className={`py-2 px-1 rounded-lg text-center text-[11px] font-bold transition-all ${
+                                isSelected
+                                  ? "bg-blue-600 text-white shadow-xs"
+                                  : isAvailable
+                                  ? "bg-white border border-slate-200 text-slate-800 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer"
+                                  : "bg-slate-100/70 text-slate-400 border border-transparent cursor-not-allowed opacity-50"
+                              }`}
+                            >
+                              {row.displayTime}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {walkInSelectedTime && (
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-blue-700 bg-blue-50/70 px-2.5 py-1.5 rounded-lg border border-blue-100">
+                          <span className="flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            {language === "ar" ? "الموعد المحدد:" : "Selected Time:"}
+                          </span>
+                          <span className="font-extrabold text-blue-900 font-mono">
+                            {(data?.timeline || []).find((r: any) => r.time === walkInSelectedTime)?.displayTime || walkInSelectedTime}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Customer Info (Optional & Fast) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">
-                      {language === "ar" ? "اسم العميل (اختياري)" : "Customer Name"}
+                      {language === "ar" ? "4. اسم العميل (اختياري)" : "4. Customer Name"}
                     </label>
                     <input
                       type="text"
@@ -1810,7 +1928,11 @@ export default function StaffDashboardPage() {
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>{language === "ar" ? "تأكيد وبدء الغسيل فوراً" : "Confirm & Start Wash"}</span>
+                        <span>
+                          {walkInTimeMode === "SPECIFIC" && walkInSelectedTime
+                            ? (language === "ar" ? `تأكيد الحجز للساعة ${walkInSelectedTime}` : `Confirm Booking for ${walkInSelectedTime}`)
+                            : (language === "ar" ? "تأكيد وبدء الغسيل فوراً" : "Confirm & Start Wash")}
+                        </span>
                       </>
                     )}
                   </button>
@@ -1821,6 +1943,18 @@ export default function StaffDashboardPage() {
                   >
                     {language === "ar" ? "إلغاء" : "Cancel"}
                   </button>
+                </div>
+
+                {/* Optional Link to Full Dedicated Walk-in Page */}
+                <div className="pt-1 text-center">
+                  <Link
+                    href={`/staff/walk-in?qr=${data?.branch?.qrIdentifier}`}
+                    onClick={() => setShowWalkInModal(false)}
+                    className="text-[11px] text-slate-400 hover:text-blue-600 font-medium inline-flex items-center gap-1 transition-colors"
+                  >
+                    <span>{language === "ar" ? "أو افتح صفحة الحجز الكاملة والمفصلة" : "Or open full dedicated booking page"}</span>
+                    <span>↗</span>
+                  </Link>
                 </div>
               </form>
             </div>
