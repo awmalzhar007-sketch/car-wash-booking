@@ -19,9 +19,9 @@ export default function FoamLogo({
 }: FoamLogoProps) {
   const iconSizes = {
     sm: "w-9 h-9",
-    md: "w-12 h-12",
-    lg: "w-16 h-16",
-    xl: "w-20 h-20",
+    md: "w-11 h-11",
+    lg: "w-14 h-14",
+    xl: "w-18 h-18",
   };
 
   const textSizes = {
@@ -31,62 +31,73 @@ export default function FoamLogo({
     xl: "text-4xl",
   };
 
+  // Luxury Minimalist Automotive Tech Emblem
+  // Aerodynamic speed contour intersecting a pure fluid water/foam crest with precision negative space
   const logoIcon = (
     <div
-      className={`relative ${iconSizes[size]} rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 p-[2px] shadow-md shadow-blue-500/25 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform`}
+      className={`relative ${iconSizes[size]} rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-slate-950 p-[1.5px] shadow-lg shadow-blue-600/20 shrink-0 flex items-center justify-center group-hover:scale-105 group-hover:shadow-blue-500/30 transition-all duration-300`}
     >
-      <div className="w-full h-full bg-blue-600 rounded-[14px] flex items-center justify-center overflow-hidden relative">
-        {/* Subtle internal shine */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/10"></div>
+      <div className="w-full h-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-[14px] flex items-center justify-center overflow-hidden relative">
+        {/* Subtle refractive sheen */}
+        <div className="absolute -top-6 -right-6 w-12 h-12 bg-cyan-400/20 rounded-full blur-md pointer-events-none"></div>
 
-        {/* Dedicated Car Wash Foam SVG Icon */}
+        {/* Bespoke Geometric Automotive Wash Monogram */}
         <svg
-          viewBox="0 0 48 48"
+          viewBox="0 0 44 44"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-4/5 h-4/5 text-white relative z-10"
+          className="w-[72%] h-[72%] relative z-10"
         >
-          {/* Foam Bubbles on Top */}
-          <circle cx="16" cy="12" r="3.5" fill="#bae6fd" />
-          <circle cx="24" cy="9" r="4.5" fill="#e0f2fe" />
-          <circle cx="32" cy="11.5" r="3" fill="#bae6fd" />
-          <circle cx="20" cy="15" r="2.5" fill="#ffffff" />
-          <circle cx="28" cy="14.5" r="2.5" fill="#ffffff" />
+          {/* Defs for premium gradients */}
+          <defs>
+            <linearGradient id="foamCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+            <linearGradient id="silverSpeedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#94a3b8" />
+            </linearGradient>
+            <linearGradient id="glowDroplet" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#67e8f9" />
+              <stop offset="100%" stopColor="#0284c7" />
+            </linearGradient>
+          </defs>
 
-          {/* Sparkle Star on top-right */}
+          {/* Aerodynamic Roof & Windshield Speed Sweep (Car Fastback Silhouette) */}
           <path
-            d="M37 6L38 9.5L41.5 10.5L38 11.5L37 15L36 11.5L32.5 10.5L36 9.5L37 6Z"
-            fill="#fef08a"
-          />
-
-          {/* Car Body Contour */}
-          {/* Windshield & Roof */}
-          <path
-            d="M12 28L16.5 19.5C17.2 18.3 18.5 17.5 20 17.5H28C29.5 17.5 30.8 18.3 31.5 19.5L36 28"
-            stroke="white"
-            strokeWidth="2.5"
+            d="M8 26C11 20 16 15 24 15C32 15 36 21 38 26"
+            stroke="url(#silverSpeedGrad)"
+            strokeWidth="2.8"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
-          {/* Car Lower Body */}
+
+          {/* Fluid Foam Wave / Surface Tension Crest forming the iconic 'F' flow */}
           <path
-            d="M7 32C7 29.8 8.8 28 11 28H37C39.2 28 41 29.8 41 32V34C41 34.6 40.6 35 40 35H8C7.4 35 7 34.6 7 34V32Z"
-            fill="white"
+            d="M13 20C17 11 27 10 32 14C35 16.5 35.5 20 33 22C30 24 25 21 21 24C17 27 14 31 12 34"
+            stroke="url(#foamCyanGrad)"
+            strokeWidth="2.6"
+            strokeLinecap="round"
           />
-          {/* Car Front Headlights */}
-          <circle cx="11.5" cy="30.5" r="1.5" fill="#38bdf8" />
-          <circle cx="36.5" cy="30.5" r="1.5" fill="#38bdf8" />
 
-          {/* Car Wheels */}
-          <circle cx="14" cy="36" r="3" fill="#0f172a" stroke="white" strokeWidth="1.5" />
-          <circle cx="34" cy="36" r="3" fill="#0f172a" stroke="white" strokeWidth="1.5" />
+          {/* Precision Micro Foam Droplets & Luxury Shine Star */}
+          <circle cx="28" cy="10" r="2" fill="url(#glowDroplet)" />
+          <circle cx="35" cy="14" r="1.5" fill="#bae6fd" />
+          <circle cx="11" cy="17" r="1.2" fill="#7dd3fc" />
 
-          {/* Water Droplet Splash under car */}
+          {/* Precision Diamond Shine Accent */}
           <path
-            d="M20 39C20 40.5 24 41 24 41C24 41 28 40.5 28 39"
-            stroke="#bae6fd"
+            d="M27 5L28 7.5L30.5 8.5L28 9.5L27 12L26 9.5L23.5 8.5L26 7.5L27 5Z"
+            fill="#ffffff"
+          />
+
+          {/* Lower Chassis Clean Grounding Line */}
+          <path
+            d="M10 31H34"
+            stroke="url(#silverSpeedGrad)"
             strokeWidth="2"
             strokeLinecap="round"
+            strokeOpacity="0.8"
           />
         </svg>
       </div>
@@ -97,19 +108,20 @@ export default function FoamLogo({
     <div className={`flex items-center gap-3.5 ${className}`}>
       {logoIcon}
       {showText && (
-        <div className="flex flex-col">
+        <div className="flex flex-col text-start">
           <div className="flex items-center gap-2">
             <span
-              className={`font-black ${textSizes[size]} text-slate-900 tracking-wider font-mono`}
+              className={`font-black ${textSizes[size]} text-slate-900 tracking-tight font-sans`}
+              style={{ letterSpacing: "-0.04em" }}
             >
               FOAM
             </span>
-            <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-blue-600 text-white tracking-wide shadow-sm">
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-gradient-to-r from-blue-600 to-cyan-600 text-white tracking-wide shadow-sm uppercase">
               فوم
             </span>
           </div>
           {showTagline && (
-            <span className="text-xs text-slate-500 font-semibold leading-none mt-1">
+            <span className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
               منظومة حجز وإدارة مغاسل السيارات الذكية
             </span>
           )}
