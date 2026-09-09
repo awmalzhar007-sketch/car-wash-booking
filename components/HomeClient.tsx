@@ -18,14 +18,16 @@ import {
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import FoamLogo from "@/components/FoamLogo";
+import CloudBackground from "@/components/CloudBackground";
 
 export default function HomeClient() {
   const { t, dir, language } = useLanguage();
   const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
-      <div className="max-w-5xl w-full mx-auto px-4 sm:px-8 py-6 flex-1 flex flex-col justify-between">
+    <div className="relative min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between overflow-x-hidden">
+      <CloudBackground />
+      <div className="relative z-10 max-w-5xl w-full mx-auto px-4 sm:px-8 py-6 flex-1 flex flex-col justify-between">
         {/* Navigation Bar */}
         <header className="py-4 flex items-center justify-between border-b border-slate-200 gap-3 flex-wrap">
           <FoamLogo size="md" showTagline={true} href="/" />
