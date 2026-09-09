@@ -36,16 +36,16 @@ export default function HomeClient() {
             <LanguageSwitcher variant="inline" />
             <Link
               href="/my-booking"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+              className="group text-xs font-semibold text-blue-600 hover:text-blue-700 bg-white/90 hover:bg-white border border-blue-200/80 hover:border-blue-300 px-3.5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5"
             >
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12 text-blue-600" />
               <span>{language === "ar" ? "تتبع حجزي" : "My Booking"}</span>
             </Link>
             <Link
               href="/staff/login"
-              className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+              className="group text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-125 group-hover:text-cyan-400" />
               <span>{language === "ar" ? "دخول الموظفين" : "Staff"}</span>
             </Link>
           </div>
@@ -54,8 +54,8 @@ export default function HomeClient() {
         {/* Hero Section */}
         <section className="my-10 sm:my-14 text-center space-y-5 max-w-3xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200/60 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          <div className="group inline-flex items-center gap-2 bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/80 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full shadow-sm transition-all cursor-default">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-125" />
             <span>
               {language === "ar"
                 ? "منظومة فوم الذكية لحجوزات وإدارة مغاسل السيارات"
@@ -91,16 +91,16 @@ export default function HomeClient() {
 
           {/* Value Stats Pills */}
           <div className="py-2 flex items-center justify-center gap-3 sm:gap-6 flex-wrap text-xs text-slate-600 font-semibold">
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-              <Zap className="w-3.5 h-3.5 text-blue-600" />
+            <div className="group flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-300 cursor-default">
+              <Zap className="w-3.5 h-3.5 text-blue-600 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 group-hover:text-amber-500" />
               <span>{language === "ar" ? "حجز فوري في 30 ثانية" : "30s Instant Booking"}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="group flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-300 cursor-default">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12" />
               <span>{language === "ar" ? "0% تضارب في المواعيد" : "Zero Slot Conflicts"}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-              <Lock className="w-3.5 h-3.5 text-indigo-600" />
+            <div className="group flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 cursor-default">
+              <Lock className="w-3.5 h-3.5 text-indigo-600 transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-0.5" />
               <span>{language === "ar" ? "خصوصية وعزل كامل" : "100% Isolated Tenancy"}</span>
             </div>
           </div>
@@ -109,18 +109,18 @@ export default function HomeClient() {
           <div className="pt-3 flex items-center justify-center gap-3 flex-wrap">
             <Link
               href="/my-booking"
-              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
+              className="group px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all duration-300 transform hover:-translate-y-0.5"
             >
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12" />
               <span>{language === "ar" ? "تتبع موعد غسيلك (كود الحجز)" : "Lookup Booking (By Code)"}</span>
-              <ArrowIcon className="w-4 h-4" />
+              <ArrowIcon className="w-4 h-4 transition-transform duration-300 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1" />
             </Link>
 
             <Link
               href="/staff/login"
-              className="px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl border border-slate-200 shadow-sm transition-all flex items-center gap-2"
+              className="group px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm transition-all duration-300 flex items-center gap-2"
             >
-              <UserCheck className="w-4 h-4 text-slate-600" />
+              <UserCheck className="w-4 h-4 text-slate-600 transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600" />
               <span>{language === "ar" ? "بوابة طاقم العمل" : "Staff Sign In"}</span>
             </Link>
           </div>
@@ -128,11 +128,11 @@ export default function HomeClient() {
 
         {/* Feature Cards Grid */}
         <section className="my-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <QrCode className="w-5 h-5" />
+          <div className="group p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-[-8deg] group-hover:shadow-md group-hover:shadow-blue-500/25">
+              <QrCode className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">
               {language === "ar" ? "حجز فوري بالـ QR" : "Instant QR Booking"}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -142,11 +142,11 @@ export default function HomeClient() {
             </p>
           </div>
 
-          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
+          <div className="group p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-indigo-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center transition-all duration-300 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-[20deg] group-hover:shadow-md group-hover:shadow-indigo-500/25">
+              <Clock className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">
               {language === "ar" ? "إغلاق المواعيد آلياً" : "Real-time Slot Locks"}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -156,11 +156,11 @@ export default function HomeClient() {
             </p>
           </div>
 
-          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Smartphone className="w-5 h-5" />
+          <div className="group p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-emerald-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center transition-all duration-300 group-hover:bg-emerald-600 group-hover:text-white group-hover:scale-110 group-hover:-translate-y-1 group-hover:shadow-md group-hover:shadow-emerald-500/25">
+              <Smartphone className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-slate-900 text-sm group-hover:text-emerald-600 transition-colors">
               {language === "ar" ? "لوحة تحكم للموظفين" : "Staff Command Center"}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -170,11 +170,11 @@ export default function HomeClient() {
             </p>
           </div>
 
-          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Lock className="w-5 h-5" />
+          <div className="group p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-amber-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center transition-all duration-300 group-hover:bg-amber-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md group-hover:shadow-amber-500/25">
+              <Lock className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-600 transition-colors">
               {language === "ar" ? "عزل وخصوصية كاملة" : "Complete Privacy"}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -188,13 +188,13 @@ export default function HomeClient() {
         {/* Quick Portals Navigation */}
         <section className="mt-8 pt-8 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Customer Portal */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-blue-300 transition-all">
+          <div className="group p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-blue-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-md group-hover:shadow-blue-500/25">
+                <Calendar className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                   {language === "ar" ? "بوابة العملاء" : "Customer Portal"}
                 </h4>
                 <p className="text-xs text-slate-500 mt-1">
@@ -209,18 +209,18 @@ export default function HomeClient() {
               className="w-full text-center py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
             >
               <span>{language === "ar" ? "الاستعلام عن حجز" : "Track My Booking"}</span>
-              <ArrowIcon className="w-3.5 h-3.5" />
+              <ArrowIcon className="w-3.5 h-3.5 transition-transform duration-300 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1" />
             </Link>
           </div>
 
           {/* Staff Portal */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-slate-400 transition-all">
+          <div className="group p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-slate-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-slate-900 group-hover:text-white group-hover:scale-110 group-hover:-translate-y-1 group-hover:shadow-md group-hover:shadow-slate-900/25">
+                <UserCheck className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-slate-800 transition-colors">
                   {language === "ar" ? "بوابة طاقم الفرع" : "Branch Staff Portal"}
                 </h4>
                 <p className="text-xs text-slate-500 mt-1">
@@ -235,18 +235,18 @@ export default function HomeClient() {
               className="w-full text-center py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
             >
               <span>{language === "ar" ? "تسجيل دخول الموظف" : "Staff Sign In"}</span>
-              <ArrowIcon className="w-3.5 h-3.5" />
+              <ArrowIcon className="w-3.5 h-3.5 transition-transform duration-300 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1" />
             </Link>
           </div>
 
           {/* Admin Portal */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-blue-400 transition-all">
+          <div className="group p-5 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between gap-4 shadow-sm hover:border-blue-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md group-hover:shadow-blue-500/25">
+                <ShieldCheck className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                   {language === "ar" ? "لوحة تحكم المسؤول" : "Admin Dashboard"}
                 </h4>
                 <p className="text-xs text-slate-500 mt-1">
@@ -261,7 +261,7 @@ export default function HomeClient() {
               className="w-full text-center py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
             >
               <span>{language === "ar" ? "دخول الإدارة" : "Admin Sign In"}</span>
-              <ArrowIcon className="w-3.5 h-3.5" />
+              <ArrowIcon className="w-3.5 h-3.5 transition-transform duration-300 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1" />
             </Link>
           </div>
         </section>
