@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branches  Branch[]
+}
+
+model Branch {
+  id                 String    @id @default(cuid())
+  brandId            String
+  brand              Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name               String
+  slug               String
+  address            String?
+  phone              String?
+  qrIdentifier       String    @unique
+  openTime           String    // e.g. "09:00"
+  closeTime          String    // e.g. "22:00"
+  avgDurationMinutes Int       @default(30)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  washBays           WashBay[]
+  users              User[]
+  bookings           Booking[]
+  services           Service[]
+
+  @@index([brandId])
+  @@index([qrIdentifier])
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  branchId        String
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  price           Float
+  durationMinutes Int      @default(30) // Wash duration for this service, set by branch staff
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([branchId])
+}
+
+model WashBay {
+  id        String    @id @default(cuid())
+  branchId  String
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  bayNumber Int
+  name      String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  bookings  Booking[]
+
+  @@unique([branchId, bayNumber])
+  @@index([branchId])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("BRANCH_STAFF") // "ADMIN", "BRANCH_STAFF"
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([branchId])
+}
+
+model Booking {
+  id            String         @id @default(cuid())
+  bookingNumber String         @unique // e.g. "CW-1024"
+  branchId      String
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  assignedBayId String
+  assignedBay   WashBay        @relation(fields: [assignedBayId], references: [id], onDelete: Restrict)
+  customerName  String
+  customerPhone String
+  bookingDate   String         // "YYYY-MM-DD"
+  startTime     String         // "HH:mm"
+  endTime       String         // "HH:mm"
+  status        String         @default("PENDING_VERIFICATION") // "PENDING_VERIFICATION", "CONFIRMED", "WASHING", "COMPLETED", "CANCELLED", "NO_SHOW"
+  servicesJson  String?        // JSON array of [{ id, name, price }]
+  totalPrice    Float          @default(0)
+  expiresAt     DateTime?      // For PENDING_VERIFICATION expiration
+  cancelledAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  otpChallenges OTPChallenge[]
+
+  @@index([branchId, bookingDate, status])
+  @@index([customerPhone])
+  @@index([assignedBayId, bookingDate])
+}
+
+model OTPChallenge {
+  id                  String   @id @default(cuid())
+  phone               String
+  bookingId           String?
+  booking             Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  codeHash            String
+  purpose             String   // "BOOKING_CONFIRMATION", "MY_BOOKING"
+  expiresAt           DateTime
+  attempts            Int      @default(0)
+  maxAttempts         Int      @default(3)
+  resendCooldownUntil DateTime
+  isVerified          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  @@index([phone, purpose])
+  @@index([bookingId])
+}

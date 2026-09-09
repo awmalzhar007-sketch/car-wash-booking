@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables - NEVER upload these
+.env
+.env.local
+.env.production
+.env*.local
+
+# Database
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+
+# Build
+build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
