@@ -68,9 +68,16 @@ export default function StaffWalkInBookingPage() {
     return () => clearInterval(interval);
   }, [serverOffsetMs]);
 
-  const loadAvailability = async (qrIdentifier: string, serviceIds?: string[], targetBayId?: string) => {
+  const loadAvailability = async (
+    qrIdentifier: string,
+    serviceIds?: string[],
+    targetBayId?: string,
+    isInitial = false
+  ) => {
     try {
-      setLoading(true);
+      if (isInitial || !branchData) {
+        setLoading(true);
+      }
       setError(null);
       const params = new URLSearchParams();
       if (serviceIds && serviceIds.length > 0) {
@@ -121,22 +128,70 @@ export default function StaffWalkInBookingPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/staff/schedule");
-      const json = await res.json();
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/staff/login");
-          return;
-        }
-        throw new Error(json.error || t("somethingWentWrong"));
+      // Check if qr is provided in query params for instant parallel fetch
+      let qrParam: string | null = null;
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        qrParam = urlParams.get("qr");
       }
 
-      setBranchInfo(json.branch);
-      setBays(json.bays || []);
-      await loadAvailability(json.branch.qrIdentifier);
+      if (qrParam) {
+        // Run both requests concurrently in parallel for 2x faster load
+        const [scheduleRes, availRes] = await Promise.all([
+          fetch("/api/staff/schedule"),
+          fetch(`/api/customer/branch/${qrParam}`),
+        ]);
+
+        const scheduleJson = await scheduleRes.json();
+        const availJson = await availRes.json();
+
+        if (!scheduleRes.ok) {
+          if (scheduleRes.status === 401) {
+            router.push("/staff/login");
+            return;
+          }
+          throw new Error(scheduleJson.error || t("somethingWentWrong"));
+        }
+
+        setBranchInfo(scheduleJson.branch);
+        setBays(scheduleJson.bays || []);
+
+        if (availRes.ok && availJson?.data) {
+          setBranchData(availJson.data);
+          if (availJson.data.serverTimestamp) {
+            setServerOffsetMs(availJson.data.serverTimestamp - Date.now());
+          }
+          const serverDate = new Date(Date.now() + (availJson.data.serverTimestamp ? availJson.data.serverTimestamp - Date.now() : 0));
+          const cairoMin = getCairoCurrentMinutes(serverDate);
+          if (availJson.data.nearestAvailableSlot && parseTimeToMinutes(availJson.data.nearestAvailableSlot.time) >= cairoMin) {
+            setSelectedSlot(availJson.data.nearestAvailableSlot);
+          } else {
+            const firstAvailable = availJson.data.slots?.find(
+              (s: TimeSlot) => s.available && !s.isPassed && parseTimeToMinutes(s.time) >= cairoMin
+            );
+            setSelectedSlot(firstAvailable || null);
+          }
+        }
+      } else {
+        const res = await fetch("/api/staff/schedule");
+        const json = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            router.push("/staff/login");
+            return;
+          }
+          throw new Error(json.error || t("somethingWentWrong"));
+        }
+
+        setBranchInfo(json.branch);
+        setBays(json.bays || []);
+        await loadAvailability(json.branch.qrIdentifier, undefined, undefined, true);
+      }
     } catch (err: any) {
       setError(err.message || t("somethingWentWrong"));
+    } finally {
       setLoading(false);
     }
   };
@@ -153,7 +208,8 @@ export default function StaffWalkInBookingPage() {
       isFirstRender.current = false;
       return;
     }
-    loadAvailability(branchInfo.qrIdentifier, selectedServiceIds, bayId || undefined);
+    // Update availability seamlessly without blocking UI or showing full-screen loader
+    loadAvailability(branchInfo.qrIdentifier, selectedServiceIds, bayId || undefined, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServiceIds, bayId]);
 
@@ -235,7 +291,7 @@ export default function StaffWalkInBookingPage() {
     }
   };
 
-  if (loading) {
+  if (loading && !branchData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />

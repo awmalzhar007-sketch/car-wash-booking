@@ -384,7 +384,7 @@ export default function StaffDashboardPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <LanguageSwitcher variant="inline" className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 hover:text-white" />
           <Link
-            href="/staff/walk-in"
+            href={`/staff/walk-in${data?.branch?.qrIdentifier ? `?qr=${data.branch.qrIdentifier}` : ""}`}
             className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
