@@ -18,84 +18,99 @@ export default function FoamLogo({
   className = "",
 }: FoamLogoProps) {
   const iconSizes = {
-    sm: "w-8 h-8",
-    md: "w-10 h-10",
-    lg: "w-12 h-12",
-    xl: "w-16 h-16",
+    sm: "w-9 h-9",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
+    xl: "w-20 h-20",
   };
 
   const textSizes = {
-    sm: "text-base tracking-tight",
-    md: "text-xl tracking-tight",
-    lg: "text-2xl tracking-tight",
-    xl: "text-3xl tracking-tight",
+    sm: "text-lg",
+    md: "text-2xl",
+    lg: "text-3xl",
+    xl: "text-4xl",
   };
 
   const logoIcon = (
     <div
-      className={`relative ${iconSizes[size]} rounded-2xl bg-gradient-to-tr from-blue-600 via-cyan-500 to-indigo-600 p-[1.5px] shadow-lg shadow-cyan-500/20 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform`}
+      className={`relative ${iconSizes[size]} rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 p-[2px] shadow-md shadow-blue-500/25 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform`}
     >
-      <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden relative">
-        {/* Glow backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-600/20 to-transparent"></div>
+      <div className="w-full h-full bg-blue-600 rounded-[14px] flex items-center justify-center overflow-hidden relative">
+        {/* Subtle internal shine */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/10"></div>
 
-        {/* Stylized Foam SVG */}
+        {/* Dedicated Car Wash Foam SVG Icon */}
         <svg
-          viewBox="0 0 40 40"
+          viewBox="0 0 48 48"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-3/4 h-3/4 text-cyan-400 relative z-10"
+          className="w-4/5 h-4/5 text-white relative z-10"
         >
-          {/* Main Bubble */}
-          <circle
-            cx="19"
-            cy="21"
-            r="11"
-            className="fill-cyan-500/30 stroke-cyan-300"
-            strokeWidth="2"
-          />
-          {/* Top-Right Secondary Bubble */}
-          <circle
-            cx="27"
-            cy="13"
-            r="6"
-            className="fill-blue-400/40 stroke-cyan-200"
-            strokeWidth="1.5"
-          />
-          {/* Small Foam Bubbles */}
-          <circle cx="10" cy="14" r="3" className="fill-cyan-200" />
-          <circle cx="31" cy="24" r="2.5" className="fill-blue-200" />
-          <circle cx="13" cy="29" r="2" className="fill-cyan-300/80" />
+          {/* Foam Bubbles on Top */}
+          <circle cx="16" cy="12" r="3.5" fill="#bae6fd" />
+          <circle cx="24" cy="9" r="4.5" fill="#e0f2fe" />
+          <circle cx="32" cy="11.5" r="3" fill="#bae6fd" />
+          <circle cx="20" cy="15" r="2.5" fill="#ffffff" />
+          <circle cx="28" cy="14.5" r="2.5" fill="#ffffff" />
 
-          {/* Sparkle Star */}
+          {/* Sparkle Star on top-right */}
           <path
-            d="M20 7L21 11L25 12L21 13L20 17L19 13L15 12L19 11L20 7Z"
+            d="M37 6L38 9.5L41.5 10.5L38 11.5L37 15L36 11.5L32.5 10.5L36 9.5L37 6Z"
+            fill="#fef08a"
+          />
+
+          {/* Car Body Contour */}
+          {/* Windshield & Roof */}
+          <path
+            d="M12 28L16.5 19.5C17.2 18.3 18.5 17.5 20 17.5H28C29.5 17.5 30.8 18.3 31.5 19.5L36 28"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Car Lower Body */}
+          <path
+            d="M7 32C7 29.8 8.8 28 11 28H37C39.2 28 41 29.8 41 32V34C41 34.6 40.6 35 40 35H8C7.4 35 7 34.6 7 34V32Z"
             fill="white"
           />
-          <circle cx="16" cy="18" r="1.5" fill="white" />
+          {/* Car Front Headlights */}
+          <circle cx="11.5" cy="30.5" r="1.5" fill="#38bdf8" />
+          <circle cx="36.5" cy="30.5" r="1.5" fill="#38bdf8" />
+
+          {/* Car Wheels */}
+          <circle cx="14" cy="36" r="3" fill="#0f172a" stroke="white" strokeWidth="1.5" />
+          <circle cx="34" cy="36" r="3" fill="#0f172a" stroke="white" strokeWidth="1.5" />
+
+          {/* Water Droplet Splash under car */}
+          <path
+            d="M20 39C20 40.5 24 41 24 41C24 41 28 40.5 28 39"
+            stroke="#bae6fd"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     </div>
   );
 
   const content = (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-3.5 ${className}`}>
       {logoIcon}
       {showText && (
         <div className="flex flex-col">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span
               className={`font-black ${textSizes[size]} text-slate-900 tracking-wider font-mono`}
             >
               FOAM
             </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white leading-none">
+            <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-blue-600 text-white tracking-wide shadow-sm">
               فوم
             </span>
           </div>
           {showTagline && (
-            <span className="text-[11px] text-slate-500 font-medium leading-none mt-0.5">
-              منظومة إدارة وحجوزات المغاسل
+            <span className="text-xs text-slate-500 font-semibold leading-none mt-1">
+              منظومة حجز وإدارة مغاسل السيارات الذكية
             </span>
           )}
         </div>
