@@ -118,6 +118,11 @@ export default function StaffDashboardPage() {
   useEffect(() => {
     loadSchedule();
     loadServices();
+    // Auto-refresh every 30s so walk-in bookings & cancellations appear without manual refresh
+    const interval = setInterval(() => {
+      loadSchedule(true);
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadServices = async () => {
