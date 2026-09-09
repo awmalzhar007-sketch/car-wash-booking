@@ -613,9 +613,9 @@ export default function AdminDashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {/* Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3 overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
+        {/* Navigation Tabs & Quick Action Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
+          <div className="flex gap-2 overflow-x-auto min-w-max">
             <button
               onClick={() => setActiveTab("BRANCHES")}
               className={`text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
@@ -661,40 +661,86 @@ export default function AdminDashboardPage() {
               {t("admin_tab_bookings")} ({bookings.length})
             </button>
           </div>
+
+          {/* Quick Action Buttons Always Visible */}
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={() => setShowCreateBrand(true)}
+              className="text-xs bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-blue-600" />
+              <span>{language === "ar" ? "إضافة براند جديد" : "Add Brand"}</span>
+            </button>
+            <button
+              onClick={() => {
+                const initialBrandId = brands[0]?.id || "";
+                setNewBranch({
+                  brandId: initialBrandId,
+                  name: "",
+                  slug: "",
+                  address: "",
+                  phone: "",
+                  qrIdentifier: "",
+                  openTime: "09:00",
+                  closeTime: "22:00",
+                  avgDurationMinutes: 30,
+                  numberOfBays: 3,
+                });
+                setShowCreateBranch(true);
+              }}
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{language === "ar" ? "إضافة فرع جديد" : "Add Branch"}</span>
+            </button>
+          </div>
         </div>
 
         {/* TAB 1: BRANCHES & QR CODES */}
         {activeTab === "BRANCHES" && (
           <div className="space-y-4 animate-fade-in">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-3">
               <div>
-                <h2 className="text-sm font-bold text-slate-900">Registered Branches</h2>
+                <h2 className="text-sm font-bold text-slate-900">
+                  {language === "ar" ? "الفروع المسجلة ومحطات الغسيل" : "Registered Branches"}
+                </h2>
                 <p className="text-xs text-slate-500">
-                  Each branch has one unique QR identifier and dedicated staff. Total: {branches.length}
+                  {language === "ar"
+                    ? `لكل فرع رمز QR مخصص ومحطات غسيل مستقلة. الإجمالي: ${branches.length} فرع`
+                    : `Each branch has one unique QR identifier and dedicated staff. Total: ${branches.length}`}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  const initialBrandId = brands[0]?.id || "";
-                  setNewBranch({
-                    brandId: initialBrandId,
-                    name: "",
-                    slug: "",
-                    address: "",
-                    phone: "",
-                    qrIdentifier: "",
-                    openTime: "09:00",
-                    closeTime: "22:00",
-                    avgDurationMinutes: 30,
-                    numberOfBays: 3,
-                  });
-                  setShowCreateBranch(true);
-                }}
-                className="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add New Branch
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowCreateBrand(true)}
+                  className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{language === "ar" ? "إضافة براند / مغسلة" : "Add Brand"}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const initialBrandId = brands[0]?.id || "";
+                    setNewBranch({
+                      brandId: initialBrandId,
+                      name: "",
+                      slug: "",
+                      address: "",
+                      phone: "",
+                      qrIdentifier: "",
+                      openTime: "09:00",
+                      closeTime: "22:00",
+                      avgDurationMinutes: 30,
+                      numberOfBays: 3,
+                    });
+                    setShowCreateBranch(true);
+                  }}
+                  className="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{language === "ar" ? "إضافة فرع جديد" : "Add New Branch"}</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -839,17 +885,23 @@ export default function AdminDashboardPage() {
         {/* TAB 2: BRANDS */}
         {activeTab === "BRANDS" && (
           <div className="space-y-4 animate-fade-in">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-3">
               <div>
-                <h2 className="text-sm font-bold text-slate-900">Car Wash Brands</h2>
-                <p className="text-xs text-slate-500">Manage brands and explore branches under each brand.</p>
+                <h2 className="text-sm font-bold text-slate-900">
+                  {language === "ar" ? "العلامات التجارية ومغاسل السيارات" : "Car Wash Brands"}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {language === "ar"
+                    ? `إدارة البراندات والمغاسل وفروع كل علامة تجارية. الإجمالي: ${brands.length}`
+                    : `Manage brands and explore branches under each brand. Total: ${brands.length}`}
+                </p>
               </div>
               <button
                 onClick={() => setShowCreateBrand(true)}
-                className="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Brand
+                <span>{language === "ar" ? "إضافة براند / مغسلة جديدة" : "Add New Brand"}</span>
               </button>
             </div>
 
@@ -1544,7 +1596,19 @@ export default function AdminDashboardPage() {
 
               <form onSubmit={handleCreateBranch} className="space-y-3 text-xs">
                 <div>
-                  <label className="font-semibold block mb-1">Brand</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-semibold">
+                      {language === "ar" ? "العلامة التجارية / المغسلة" : "Brand / Car Wash"}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateBrand(true)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{language === "ar" ? "إضافة براند جديد" : "Add Brand"}</span>
+                    </button>
+                  </div>
                   <select
                     required
                     value={newBranch.brandId}
@@ -1676,10 +1740,12 @@ export default function AdminDashboardPage() {
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="font-bold text-base text-slate-900">Add New Brand</h3>
+                <h3 className="font-bold text-base text-slate-900">
+                  {language === "ar" ? "إضافة علامة تجارية / مغسلة جديدة" : "Add New Brand"}
+                </h3>
                 <button
                   onClick={() => setShowCreateBrand(false)}
-                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"
+                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1687,44 +1753,54 @@ export default function AdminDashboardPage() {
 
               <form onSubmit={handleCreateBrand} className="space-y-3 text-xs">
                 <div>
-                  <label className="font-semibold block mb-1">Brand Name</label>
+                  <label className="font-semibold block mb-1">
+                    {language === "ar" ? "اسم المغسلة / البراند" : "Brand Name"}
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Royal Wash"
+                    placeholder={language === "ar" ? "مثال: مغسلة الصفوة" : "e.g. Royal Wash"}
                     value={newBrand.name}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Generate english slug if letters exist, otherwise provide clean slug
+                      const cleanSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
                       setNewBrand({
-                        name: e.target.value,
-                        slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-                      })
-                    }
+                        name: val,
+                        slug: cleanSlug || (newBrand.slug && newBrand.slug.length > 2 ? newBrand.slug : `brand-${Math.floor(100 + Math.random() * 900)}`),
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold block mb-1">Brand Slug</label>
+                  <label className="font-semibold block mb-1">
+                    {language === "ar" ? "الرابط المختصر (إنجليزي - فريد)" : "Brand Slug (Unique URL)"}
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="royal-wash"
+                    placeholder="e.g. royal-wash"
                     value={newBrand.slug}
-                    onChange={(e) => setNewBrand({ ...newBrand, slug: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                    onChange={(e) => setNewBrand({ ...newBrand, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "") })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
                   />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {language === "ar" ? "يستخدم في رابط صفحة البراند العامة" : "Used in public brand page URLs"}
+                  </p>
                 </div>
                 <button
                   type="submit"
                   disabled={creatingBrand}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl mt-2 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl mt-2 transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   {creatingBrand ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Saving...
+                      <span>{language === "ar" ? "جاري الحفظ..." : "Saving..."}</span>
                     </>
                   ) : (
-                    "Save Brand"
+                    <span>{language === "ar" ? "حفظ المغسلة والبراند" : "Save Brand"}</span>
                   )}
                 </button>
               </form>
