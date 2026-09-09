@@ -159,9 +159,9 @@ export default function BranchBookingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrIdentifier]);
 
-  // Periodic background refresh (10s) and on tab focus
+  // Periodic background refresh (10s) and on tab focus — stop once booking is confirmed
   useEffect(() => {
-    if (!qrIdentifier) return;
+    if (!qrIdentifier || step === "CONFIRMED") return;
     const interval = setInterval(() => {
       refreshAvailabilitySilently(selectedServiceIds);
     }, 10000);
@@ -174,11 +174,11 @@ export default function BranchBookingPage() {
       window.removeEventListener("focus", onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrIdentifier, selectedServiceIds]);
+  }, [qrIdentifier, selectedServiceIds, step]);
 
-  // Real-time automatic slot invalidation when time passes
+  // Real-time automatic slot invalidation when time passes — skip if already confirmed
   useEffect(() => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || step === "CONFIRMED") return;
     const slotMin = parseTimeToMinutes(selectedSlot.time);
     if (slotMin < currentCairoMin) {
       setSelectedSlot(null);
