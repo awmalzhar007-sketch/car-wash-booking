@@ -30,13 +30,50 @@ export default function StaffWalkInBookingPage() {
   const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
 
   // Branch / staff session data
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [branchInfo, setBranchInfo] = useState<any>(null);
-  const [bays, setBays] = useState<any[]>([]);
+  const [branchInfo, setBranchInfo] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("foam_staff_data");
+        if (cached) return JSON.parse(cached).branch;
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [bays, setBays] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("foam_staff_data");
+        if (cached) return JSON.parse(cached).bays || [];
+      } catch (e) {}
+    }
+    return [];
+  });
 
   // Availability data
-  const [branchData, setBranchData] = useState<any>(null);
+  const [branchData, setBranchData] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cachedServices = sessionStorage.getItem("foam_staff_services");
+        const cachedData = sessionStorage.getItem("foam_staff_data");
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+          return {
+            branchId: parsed.branch?.id,
+            name: parsed.branch?.name,
+            openTime: parsed.branch?.openTime,
+            closeTime: parsed.branch?.closeTime,
+            avgDurationMinutes: parsed.branch?.avgDurationMinutes,
+            isClosedNow: false,
+            services: cachedServices ? JSON.parse(cachedServices) : [],
+            slots: [],
+          };
+        }
+      } catch (e) {}
+    }
+    return null;
+  });
 
   // Real-time server offset and current Cairo minutes
   const [serverOffsetMs, setServerOffsetMs] = useState<number>(0);
@@ -75,7 +112,7 @@ export default function StaffWalkInBookingPage() {
     isInitial = false
   ) => {
     try {
-      if (isInitial || !branchData) {
+      if (isInitial && !branchData) {
         setLoading(true);
       }
       setError(null);
@@ -95,6 +132,13 @@ export default function StaffWalkInBookingPage() {
       }
 
       setBranchData(data.data);
+      if (typeof window !== "undefined") {
+        try {
+          if (data.data?.services?.length > 0) {
+            sessionStorage.setItem("foam_staff_services", JSON.stringify(data.data.services));
+          }
+        } catch (e) {}
+      }
       if (data.data.serverTimestamp) {
         setServerOffsetMs(data.data.serverTimestamp - Date.now());
       }
@@ -510,6 +554,15 @@ export default function StaffWalkInBookingPage() {
                     );
                   }
 
+                  if (loading && (!branchData?.slots || branchData.slots.length === 0)) {
+                    return (
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                        <span>{language === "ar" ? "جاري فحص المواعيد المتاحة..." : "Checking available slots..."}</span>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div className="p-4 bg-slate-100 rounded-xl text-center text-xs text-slate-500">
                       {t("book_no_slots")}
@@ -529,7 +582,7 @@ export default function StaffWalkInBookingPage() {
 
                   {showOtherTimes && (
                     <div className="mt-3 grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1 border-t border-slate-100 pt-3">
-                      {branchData?.slots.map((slot: TimeSlot) => {
+                      {(branchData?.slots || []).map((slot: TimeSlot) => {
                         const slotMin = parseTimeToMinutes(slot.time);
                         const isSlotPassed = slot.isPassed || slotMin < currentCairoMin;
                         const isSlotAvailable = slot.available && !isSlotPassed;
