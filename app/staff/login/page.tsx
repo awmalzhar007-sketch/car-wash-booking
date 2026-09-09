@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import FoamLogo from "@/components/FoamLogo";
 
 export default function StaffLoginPage() {
   const router = useRouter();
@@ -69,18 +70,20 @@ export default function StaffLoginPage() {
 
       <div className="max-w-sm w-full bg-white border border-slate-200 rounded-3xl p-7 shadow-sm space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
-            <UserCheck className="w-7 h-7" />
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <FoamLogo size="lg" showText={false} />
           </div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            {language === "ar" ? "دخول الموظف" : "Staff Login"}
-          </h1>
-          <p className="text-xs text-slate-500">
-            {language === "ar"
-              ? "أدخل بيانات حسابك للمتابعة"
-              : "Enter your credentials to continue"}
-          </p>
+          <div>
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              {language === "ar" ? "بوابة طاقم الفرع" : "Staff Sign In"}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {language === "ar"
+                ? "منظومة فوم الذكية لإدارة المغاسل"
+                : "FOAM Smart Car Wash System"}
+            </p>
+          </div>
         </div>
 
         {/* Error Message */}

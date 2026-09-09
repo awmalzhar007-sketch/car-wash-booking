@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ShieldCheck, Lock, Mail, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import FoamLogo from "@/components/FoamLogo";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -57,18 +58,20 @@ export default function AdminLoginPage() {
       </div>
 
       <div className="max-w-sm w-full bg-white border border-slate-200 rounded-3xl p-7 shadow-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-blue-500/20">
-            <ShieldCheck className="w-7 h-7" />
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <FoamLogo size="lg" showText={false} />
           </div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            {language === "ar" ? "دخول المسؤول" : "Admin Login"}
-          </h1>
-          <p className="text-xs text-slate-500">
-            {language === "ar"
-              ? "أدخل بيانات حساب المسؤول للمتابعة"
-              : "Enter your admin credentials to continue"}
-          </p>
+          <div>
+            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              {language === "ar" ? "لوحة تحكم المسؤول" : "Super Admin Center"}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {language === "ar"
+                ? "منظومة فوم - التحكم المركزي"
+                : "FOAM Central Administration"}
+            </p>
+          </div>
         </div>
 
         {error && (

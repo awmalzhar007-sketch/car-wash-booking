@@ -4,8 +4,8 @@ import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export const metadata: Metadata = {
-  title: "Clean Car Wash - Same-Day Appointments | كلين كار ووش",
-  description: "Fast, queue-free same-day car wash booking platform. منصة حجز مواعيد غسيل سيارات بدون انتظار.",
+  title: "FOAM | فوم - منصة إدارة وحجوزات مغاسل السيارات الذكية",
+  description: "منظومة سحابية متطورة لإدارة حجوزات ومحطات مغاسل السيارات عبر رموز الـ QR مباشرة بدون انتظار.",
 };
 
 export const viewport: Viewport = {
