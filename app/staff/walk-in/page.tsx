@@ -328,6 +328,12 @@ export default function StaffWalkInBookingPage() {
 
       setConfirmedBooking(json.booking);
       setStep("CONFIRMED");
+      // Notify dashboard immediately so it refreshes without waiting for poll
+      try {
+        const ch = new BroadcastChannel("foam_schedule_update");
+        ch.postMessage({ type: "WALK_IN_ADDED" });
+        ch.close();
+      } catch (e) {}
     } catch (err: any) {
       setError(err.message || (language === "ar" ? "فشل إنشاء الحجز المباشر" : "Failed to create walk-in booking"));
     } finally {

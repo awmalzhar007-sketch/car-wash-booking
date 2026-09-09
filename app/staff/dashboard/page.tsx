@@ -122,7 +122,16 @@ export default function StaffDashboardPage() {
     const interval = setInterval(() => {
       loadSchedule(true);
     }, 30000);
-    return () => clearInterval(interval);
+    // Also refresh immediately when walk-in page signals a new booking
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel("foam_schedule_update");
+      channel.onmessage = () => loadSchedule(true);
+    } catch (e) {}
+    return () => {
+      clearInterval(interval);
+      channel?.close();
+    };
   }, []);
 
   const loadServices = async () => {
