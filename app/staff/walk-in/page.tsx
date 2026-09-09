@@ -291,14 +291,7 @@ export default function StaffWalkInBookingPage() {
     }
   };
 
-  if (loading && !branchData) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
-        <p className="text-slate-600 font-medium text-sm">{t("loading")}</p>
-      </div>
-    );
-  }
+
 
   if (error && !branchData) {
     return (

@@ -24,6 +24,8 @@ import {
   Receipt,
   TrendingUp,
   RotateCcw,
+  Car,
+  LayoutGrid,
 } from "lucide-react";
 import { BookingStatus, StaffBookingDetail } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -77,6 +79,62 @@ export default function StaffDashboardPage() {
   // Status filter for LIST view
   const [listFilter, setListFilter] = useState<string>("ALL");
 
+  // Instant Walk-in modal state
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [walkInCustomerName, setWalkInCustomerName] = useState("");
+  const [walkInCustomerPhone, setWalkInCustomerPhone] = useState("");
+  const [walkInSelectedBayId, setWalkInSelectedBayId] = useState("");
+  const [walkInSelectedServiceIds, setWalkInSelectedServiceIds] = useState<string[]>([]);
+  const [creatingWalkIn, setCreatingWalkIn] = useState(false);
+  const [walkInError, setWalkInError] = useState<string | null>(null);
+  const [walkInSuccessMsg, setWalkInSuccessMsg] = useState<string | null>(null);
+
+  const toggleWalkInService = (serviceId: string) => {
+    setWalkInSelectedServiceIds((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+    );
+  };
+
+  const handleCreateWalkIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setCreatingWalkIn(true);
+      setWalkInError(null);
+
+      const customerName = walkInCustomerName.trim() || (language === "ar" ? "حضور مباشر (فوري)" : "Walk-In Customer");
+      const customerPhone = walkInCustomerPhone.trim() || "01000000000";
+
+      const res = await fetch("/api/staff/walk-in-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName,
+          customerPhone,
+          selectedServiceIds: walkInSelectedServiceIds,
+          bayId: walkInSelectedBayId || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || (language === "ar" ? "فشل إنشاء الحجز المباشر" : "Failed to create walk-in booking"));
+      }
+
+      setShowWalkInModal(false);
+      setWalkInCustomerName("");
+      setWalkInCustomerPhone("");
+      setWalkInSelectedBayId("");
+      setWalkInSelectedServiceIds([]);
+      setWalkInSuccessMsg(language === "ar" ? "تم تسجيل الحجز ودخول السيارة بنجاح!" : "Walk-in booked successfully!");
+      setTimeout(() => setWalkInSuccessMsg(null), 4000);
+      await loadSchedule(true);
+    } catch (err: any) {
+      setWalkInError(err.message || (language === "ar" ? "فشل إنشاء الحجز المباشر" : "Failed to create walk-in booking"));
+    } finally {
+      setCreatingWalkIn(false);
+    }
+  };
+
   const loadSchedule = async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) setRefreshing(true);
@@ -109,6 +167,7 @@ export default function StaffDashboardPage() {
 
   useEffect(() => {
     loadSchedule();
+    loadServices();
   }, []);
 
   const loadServices = async () => {
@@ -383,13 +442,18 @@ export default function StaffDashboardPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <LanguageSwitcher variant="inline" className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700 hover:text-white" />
-          <Link
-            href={`/staff/walk-in${data?.branch?.qrIdentifier ? `?qr=${data.branch.qrIdentifier}` : ""}`}
-            className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+          <button
+            type="button"
+            onClick={() => {
+              setWalkInError(null);
+              setShowWalkInModal(true);
+              if (services.length === 0) loadServices();
+            }}
+            className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm shrink-0 active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            {t("staff_walkin_btn")}
-          </Link>
+            <span>{t("staff_walkin_btn")}</span>
+          </button>
           <button
             onClick={() => loadSchedule(true)}
             disabled={refreshing}
@@ -1563,6 +1627,202 @@ export default function StaffDashboardPage() {
                   </p>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUCCESS TOAST */}
+        {walkInSuccessMsg && (
+          <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-fade-in border border-emerald-500">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{walkInSuccessMsg}</span>
+          </div>
+        )}
+
+        {/* WALK-IN QUICK BOOKING MODAL */}
+        {showWalkInModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-auto border border-slate-100">
+              <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                    <Car className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 leading-tight">
+                      {language === "ar" ? "حجز فوري (حضور مباشر الآن)" : "Quick Walk-In Booking"}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {language === "ar" ? "تسجيل سيارة واصلة للمغسلة حالياً وبدء الغسيل" : "Register an arriving vehicle and assign bay"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWalkInModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {walkInError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{walkInError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateWalkIn} className="space-y-4 text-xs">
+                {/* 1. Services Selection */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-slate-800 text-xs">
+                      {language === "ar" ? "1. اختر نوع الغسلة / الخدمة" : "1. Select Wash Service"}
+                    </label>
+                    {walkInSelectedServiceIds.length > 0 && (
+                      <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/60 text-xs">
+                        {formatPrice(
+                          (services || [])
+                            .filter((s) => walkInSelectedServiceIds.includes(s.id))
+                            .reduce((sum, s) => sum + s.price, 0)
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {services.length === 0 ? (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-center">
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-blue-600" />
+                      <span>{language === "ar" ? "جاري تحميل باقات الغسيل..." : "Loading services..."}</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                      {services.map((service) => {
+                        const isSelected = walkInSelectedServiceIds.includes(service.id);
+                        return (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => toggleWalkInService(service.id)}
+                            className={`p-3 rounded-xl border-2 text-start transition-all cursor-pointer ${
+                              isSelected
+                                ? "border-blue-600 bg-blue-50/70 shadow-xs"
+                                : "border-slate-200 hover:border-blue-300 bg-white"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-1">
+                              <span className="font-bold text-slate-900 text-xs leading-tight">
+                                {tServiceName(service.name)}
+                              </span>
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                                  isSelected
+                                    ? "border-blue-600 bg-blue-600 text-white"
+                                    : "border-slate-300"
+                                }`}
+                              >
+                                {isSelected && <Check className="w-2.5 h-2.5" />}
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center mt-2 text-xs">
+                              <span className="font-black text-blue-700">
+                                {formatPrice(service.price)}
+                              </span>
+                              <span className="text-slate-400 text-[10px]">
+                                ~{service.durationMinutes} {t("mins")}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Bay Selection */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-800 text-xs">
+                    {language === "ar" ? "2. حارة الغسيل (المحطة)" : "2. Wash Bay"}
+                  </label>
+                  <div className="relative">
+                    <LayoutGrid className={`w-4 h-4 text-slate-400 absolute top-2.5 ${dir === "rtl" ? "right-3" : "left-3"}`} />
+                    <select
+                      value={walkInSelectedBayId}
+                      onChange={(e) => setWalkInSelectedBayId(e.target.value)}
+                      className={`w-full py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all ${
+                        dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"
+                      }`}
+                    >
+                      <option value="">
+                        {language === "ar" ? "توزيع تلقائي لأول حارة متاحة الآن" : "Auto-assign first available bay"}
+                      </option>
+                      {(data?.bays || []).map((bay: any) => (
+                        <option key={bay.id} value={bay.id}>
+                          {bay.name} {bay.currentBooking ? (language === "ar" ? "(مشغولة حالياً)" : "(Busy)") : (language === "ar" ? "(متاحة الآن)" : "(Available)")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Customer Info (Optional & Fast) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      {language === "ar" ? "اسم العميل (اختياري)" : "Customer Name"}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={language === "ar" ? "مثال: أحمد محمد (أو اتركه فارغاً)" : "e.g. John Doe"}
+                      value={walkInCustomerName}
+                      onChange={(e) => setWalkInCustomerName(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      {language === "ar" ? "رقم الموبايل (اختياري)" : "Customer Phone"}
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="010xxxxxxxx"
+                      value={walkInCustomerPhone}
+                      onChange={(e) => setWalkInCustomerPhone(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit Action */}
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={creatingWalkIn}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer active:scale-98"
+                  >
+                    {creatingWalkIn ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{language === "ar" ? "جاري تسجيل الحجز..." : "Booking..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{language === "ar" ? "تأكيد وبدء الغسيل فوراً" : "Confirm & Start Wash"}</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowWalkInModal(false)}
+                    className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs transition-colors"
+                  >
+                    {language === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
