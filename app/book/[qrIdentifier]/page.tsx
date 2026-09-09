@@ -69,9 +69,11 @@ export default function BranchBookingPage() {
   }, [serverOffsetMs]);
 
   // Load branch availability (initial or user-driven service changes)
-  const loadAvailability = async (serviceIds?: string[]) => {
+  const loadAvailability = async (serviceIds?: string[], isInitial: boolean = false) => {
     try {
-      setLoading(true);
+      if (isInitial || !branchData) {
+        setLoading(true);
+      }
       setError(null);
       const query = serviceIds && serviceIds.length > 0
         ? `?serviceIds=${serviceIds.join(",")}`
@@ -152,7 +154,7 @@ export default function BranchBookingPage() {
 
   useEffect(() => {
     if (qrIdentifier) {
-      loadAvailability();
+      loadAvailability(undefined, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrIdentifier]);
@@ -194,7 +196,7 @@ export default function BranchBookingPage() {
       isFirstServicesRender.current = false;
       return;
     }
-    loadAvailability(selectedServiceIds);
+    loadAvailability(selectedServiceIds, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServiceIds]);
 
@@ -289,7 +291,7 @@ export default function BranchBookingPage() {
     }
   };
 
-  if (loading) {
+  if (loading && !branchData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
