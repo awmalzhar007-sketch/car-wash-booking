@@ -138,7 +138,7 @@ async function main() {
   });
 
   // 4. Create Users
-  const adminPasswordHash = await bcrypt.hash("admin12345", 10);
+  const adminPasswordHash = await bcrypt.hash("admin123456", 10);
   const staffPasswordHash = await bcrypt.hash("staff123456", 10);
 
   // Admin
