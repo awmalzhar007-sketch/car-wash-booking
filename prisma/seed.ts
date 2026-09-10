@@ -247,12 +247,9 @@ async function main() {
   // Note: Bay 3 at 11:00 remains free! So 11:00 is AVAILABLE in Maadi.
 
   console.log("Database seeded successfully!");
-  console.log("Credentials:");
-  console.log("- Admin: admin@cleancar.com / admin123456");
-  console.log("- Maadi Staff: staff.maadi@cleancar.com / staff123456");
-  console.log("- Nasr Staff: staff.nasr@cleancar.com / staff123456");
-  console.log("- QR Maadi: clean-car-maadi (/book/clean-car-maadi)");
-  console.log("- QR Nasr City: clean-car-nasr-city (/book/clean-car-nasr-city)");
+  console.log("- Admin account created");
+  console.log("- Branch staff accounts created");
+  console.log("- QR endpoints initialized");
 }
 
 main()

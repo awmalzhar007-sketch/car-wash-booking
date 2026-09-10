@@ -58,12 +58,14 @@ export async function generateAndSendOTP(
   });
 
   // SMS Gateway / Mock Delivery
-  console.log(`\n========================================`);
-  console.log(`[DEV OTP] Sent to: ${phone}`);
-  console.log(`[DEV OTP] Purpose: ${purpose}`);
-  console.log(`[DEV OTP] Verification Code: >>> ${code} <<<`);
-  console.log(`[DEV OTP] Expires at: ${expiresAt.toISOString()}`);
-  console.log(`========================================\n`);
+  if (process.env.NODE_ENV !== "production" && process.env.ENABLE_MOCK_OTP === "true") {
+    console.log(`\n========================================`);
+    console.log(`[DEV OTP] Sent to: ${phone}`);
+    console.log(`[DEV OTP] Purpose: ${purpose}`);
+    console.log(`[DEV OTP] Verification Code: >>> ${code} <<<`);
+    console.log(`[DEV OTP] Expires at: ${expiresAt.toISOString()}`);
+    console.log(`========================================\n`);
+  }
 
   return {
     challengeId: challenge.id,

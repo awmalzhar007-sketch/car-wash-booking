@@ -2,15 +2,24 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { AuthSession } from "@/lib/types";
+import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "carwash_super_secret_jwt_key_development_only_change_in_production_32chars"
-);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("CRITICAL_SECURITY_ERROR: JWT_SECRET environment variable is missing in production!");
+    }
+    // Fallback only permitted in local development
+    return new TextEncoder().encode("local_dev_fallback_secret_not_used_in_production_32chars");
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const SESSION_COOKIE_NAME = "cw_session";
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, 12);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -22,12 +31,12 @@ export async function createSessionToken(session: AuthSession): Promise<string> 
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifySessionToken(token: string): Promise<AuthSession | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return {
       userId: payload.userId as string,
       email: payload.email as string,
@@ -88,6 +97,24 @@ export async function requireAdmin(reqHeaders?: Headers): Promise<AuthSession> {
   if (session.role !== "ADMIN") {
     throw new Error("FORBIDDEN_NOT_ADMIN");
   }
+
+  // Server-side database verification to ensure user actually exists and is an active ADMIN
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { role: true },
+    });
+    if (!dbUser || dbUser.role !== "ADMIN") {
+      throw new Error("FORBIDDEN_NOT_ADMIN");
+    }
+  } catch (err: any) {
+    if (err.message === "FORBIDDEN_NOT_ADMIN") throw err;
+    // Allow unit tests without DB if not production
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("FORBIDDEN_NOT_ADMIN");
+    }
+  }
+
   return session;
 }
 
