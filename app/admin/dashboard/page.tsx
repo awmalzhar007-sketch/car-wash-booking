@@ -32,6 +32,8 @@ import {
   ArrowRight,
   DollarSign,
   RotateCcw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -91,6 +93,7 @@ export default function AdminDashboardPage() {
   // Edit Staff Modal state
   const [editStaff, setEditStaff] = useState<any>(null);
   const [updatingStaff, setUpdatingStaff] = useState(false);
+  const [showEditStaffPassword, setShowEditStaffPassword] = useState(false);
 
   // Edit Branch state
   const [editBranch, setEditBranch] = useState<any>(null);
@@ -345,6 +348,7 @@ export default function AdminDashboardPage() {
     if (!editStaff) return;
     try {
       setUpdatingStaff(true);
+      const cleanPassword = editStaff.password ? editStaff.password.trim() : undefined;
       const res = await fetch(`/api/admin/staff/${editStaff.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -352,7 +356,7 @@ export default function AdminDashboardPage() {
           name: editStaff.name,
           email: editStaff.email,
           branchId: editStaff.branchId,
-          password: editStaff.password || undefined,
+          password: cleanPassword,
         }),
       });
       if (!res.ok) {
@@ -360,7 +364,12 @@ export default function AdminDashboardPage() {
         throw new Error(err.error || "Failed to update staff member");
       }
       setEditStaff(null);
-      showToast("Staff member updated successfully!");
+      setShowEditStaffPassword(false);
+      showToast(
+        language === "ar"
+          ? "تم تحديث بيانات وكلمة مرور الموظف بنجاح!"
+          : "Staff member updated successfully!"
+      );
       await loadData();
     } catch (err: any) {
       alert(err.message);
@@ -1049,19 +1058,23 @@ export default function AdminDashboardPage() {
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() =>
+                              onClick={() => {
+                                setShowEditStaffPassword(false);
                                 setEditStaff({
                                   id: staff.id,
                                   name: staff.name,
                                   email: staff.email,
                                   branchId: staff.branchId || "",
                                   password: "",
-                                })
-                              }
-                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-colors"
-                              title="Edit Staff Member"
+                                });
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-colors flex items-center gap-1"
+                              title={language === "ar" ? "تعديل الموظف وتغيير كلمة المرور" : "Edit Staff & Change Password"}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-medium hidden sm:inline">
+                                {language === "ar" ? "تعديل" : "Edit"}
+                              </span>
                             </button>
                             <button
                               onClick={() => handleDeleteStaff(staff.id, staff.name)}
@@ -1498,11 +1511,16 @@ export default function AdminDashboardPage() {
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                   <Edit2 className="w-4 h-4 text-blue-600" />
-                  Edit Staff Member
+                  <span>
+                    {language === "ar" ? "تعديل بيانات وحساب الموظف" : "Edit Staff Member"}
+                  </span>
                 </h3>
                 <button
-                  onClick={() => setEditStaff(null)}
-                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"
+                  onClick={() => {
+                    setEditStaff(null);
+                    setShowEditStaffPassword(false);
+                  }}
+                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1510,7 +1528,9 @@ export default function AdminDashboardPage() {
 
               <form onSubmit={handleUpdateStaff} className="space-y-3 text-xs">
                 <div>
-                  <label className="font-semibold block mb-1">Assigned Branch</label>
+                  <label className="font-semibold block mb-1">
+                    {language === "ar" ? "الفرع المخصص له" : "Assigned Branch"}
+                  </label>
                   <select
                     required
                     value={editStaff.branchId}
@@ -1526,7 +1546,9 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="font-semibold block mb-1">Staff Full Name</label>
+                  <label className="font-semibold block mb-1">
+                    {language === "ar" ? "اسم الموظف بالكامل" : "Staff Full Name"}
+                  </label>
                   <input
                     type="text"
                     required
@@ -1537,7 +1559,9 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="font-semibold block mb-1">Email Address</label>
+                  <label className="font-semibold block mb-1">
+                    {language === "ar" ? "البريد الإلكتروني" : "Email Address"}
+                  </label>
                   <input
                     type="email"
                     required
@@ -1549,16 +1573,46 @@ export default function AdminDashboardPage() {
 
                 <div>
                   <label className="font-semibold block mb-1">
-                    New Password (leave blank to keep current)
+                    {language === "ar"
+                      ? "كلمة المرور الجديدة (اتركها فارغة إذا لا تريد التغيير)"
+                      : "New Password (leave blank to keep current)"}
                   </label>
-                  <input
-                    type="password"
-                    minLength={6}
-                    placeholder="Leave blank to keep unchanged"
-                    value={editStaff.password || ""}
-                    onChange={(e) => setEditStaff({ ...editStaff, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showEditStaffPassword ? "text" : "password"}
+                      minLength={6}
+                      placeholder={
+                        language === "ar"
+                          ? "اتركها فارغة للإبقاء على الحالية، أو اكتب كلمة مرور جديدة"
+                          : "Leave blank to keep unchanged"
+                      }
+                      value={editStaff.password || ""}
+                      onChange={(e) => setEditStaff({ ...editStaff, password: e.target.value })}
+                      className={`w-full py-2 border border-slate-200 rounded-xl font-mono ${
+                        dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditStaffPassword((v) => !v)}
+                      tabIndex={-1}
+                      className={`absolute top-2.5 ${
+                        dir === "rtl" ? "left-3" : "right-3"
+                      } text-slate-400 hover:text-slate-700 transition-colors`}
+                      aria-label="Toggle password visibility"
+                    >
+                      {showEditStaffPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {language === "ar"
+                      ? "الحد الأدنى 6 خانات. عند الحفظ سيتم تعيين الباسورد الجديد فوراً للموظف."
+                      : "Minimum 6 characters. If entered, new password will take effect immediately."}
+                  </p>
                 </div>
 
                 <button
@@ -1569,10 +1623,10 @@ export default function AdminDashboardPage() {
                   {updatingStaff ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Saving Changes...
+                      <span>{language === "ar" ? "جاري الحفظ..." : "Saving Changes..."}</span>
                     </>
                   ) : (
-                    "Save Changes"
+                    <span>{language === "ar" ? "حفظ التغييرات" : "Save Changes"}</span>
                   )}
                 </button>
               </form>
