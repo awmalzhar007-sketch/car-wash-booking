@@ -37,10 +37,27 @@ import { translateCarWashText } from "@/lib/i18n/translator";
 export default function StaffDashboardPage() {
   const router = useRouter();
   const { t, formatPrice, formatTime, dir, language, tServiceName, tServiceDesc } = useLanguage();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // Start in loading state only if no cached data exists
+    if (typeof window !== "undefined") {
+      try {
+        return !sessionStorage.getItem("foam_staff_data");
+      } catch (e) {}
+    }
+    return true;
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any>(() => {
+    // Hydrate instantly from cache so the dashboard renders without a loading screen
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem("foam_staff_data");
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return null;
+  });
 
   // Active view: TIMELINE or LIST or PRICING or DAILY_SUMMARY or SETTINGS
   const [viewTab, setViewTab] = useState<
@@ -69,11 +86,19 @@ export default function StaffDashboardPage() {
   const [selectedBooking, setSelectedBooking] = useState<StaffBookingDetail | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  // Settings form state
-  const [openTime, setOpenTime] = useState("");
-  const [closeTime, setCloseTime] = useState("");
-  const [avgDuration, setAvgDuration] = useState(30);
-  const [baysCount, setBaysCount] = useState(3);
+  // Settings form state — pre-populated from cache for instant render
+  const [openTime, setOpenTime] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("foam_staff_data") || "{}").branch?.openTime || ""; } catch { return ""; }
+  });
+  const [closeTime, setCloseTime] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("foam_staff_data") || "{}").branch?.closeTime || ""; } catch { return ""; }
+  });
+  const [avgDuration, setAvgDuration] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("foam_staff_data") || "{}").branch?.avgDurationMinutes || 30; } catch { return 30; }
+  });
+  const [baysCount, setBaysCount] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("foam_staff_data") || "{}").bays?.length || 3; } catch { return 3; }
+  });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
 
@@ -82,7 +107,8 @@ export default function StaffDashboardPage() {
 
   const loadSchedule = async (isManualRefresh = false) => {
     try {
-      if (isManualRefresh) setRefreshing(true);
+      const hasCachedData = typeof window !== "undefined" && !!sessionStorage.getItem("foam_staff_data");
+      if (isManualRefresh || hasCachedData) setRefreshing(true);
       else setLoading(true);
       setError(null);
 
