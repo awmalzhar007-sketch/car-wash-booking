@@ -103,6 +103,13 @@ export default function StaffDashboardPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
 
+  // Toast notification for user feedback
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastNotice(msg);
+    setTimeout(() => setToastNotice(null), 3500);
+  };
+
   // Status filter for LIST view
   const [listFilter, setListFilter] = useState<string>("ALL");
 
@@ -147,9 +154,18 @@ export default function StaffDashboardPage() {
     }
   };
 
-  const handleSelectDate = (d: string) => {
+  const handleSelectDate = (d: string, targetTab: "TIMELINE" | "LIST" | "DAILY_SUMMARY" = "LIST") => {
     setSelectedDate(d);
+    setViewTab(targetTab);
     loadSchedule(true, d);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (d) {
+      showToast(language === "ar" ? `تم الانتقال لعرض حجوزات وعمليات يوم: ${d}` : `Viewing bookings for: ${d}`);
+    } else {
+      showToast(language === "ar" ? "تمت العودة لعرض اليوم الحالي" : "Returned to today's operations");
+    }
   };
 
   useEffect(() => {
@@ -471,7 +487,15 @@ export default function StaffDashboardPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 relative">
+        {/* Floating Toast Feedback Notice */}
+        {toastNotice && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur text-white text-xs font-bold py-2.5 px-5 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-2.5 transition-all pointer-events-none">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastNotice}</span>
+          </div>
+        )}
+
         {/* KPI Counts Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
@@ -539,6 +563,39 @@ export default function StaffDashboardPage() {
             </p>
           </button>
         </div>
+
+        {/* Historical Date Notice if viewing a specific date */}
+        {selectedDate && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 px-4 flex items-center justify-between flex-wrap gap-2 text-xs shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2 text-amber-900 font-bold">
+              <Calendar className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                {language === "ar"
+                  ? `أنت الآن تستعرض سجل وعمليات يوم: ${data?.date || selectedDate} ${selectedDate === data?.today ? "(اليوم الحالي)" : ""}`
+                  : `Currently viewing operations for: ${data?.date || selectedDate} ${selectedDate === data?.today ? "(Today)" : ""}`}
+              </span>
+            </div>
+            {selectedDate !== data?.today ? (
+              <button
+                type="button"
+                onClick={() => handleSelectDate("", "DAILY_SUMMARY")}
+                className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{language === "ar" ? "العودة لليوم الحالي" : "Back to Today"}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setViewTab("DAILY_SUMMARY")}
+                className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{language === "ar" ? "عرض الملخص المالي" : "View Financial Summary"}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* View Tabs Selector */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-3 flex-wrap gap-2">
@@ -757,7 +814,9 @@ export default function StaffDashboardPage() {
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 space-y-4 animate-fade-in">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-sm font-bold text-slate-900">
-                {language === "ar" ? "حجوزات اليوم" : "Today's Bookings"}
+                {language === "ar"
+                  ? `حجوزات ${data?.date === data?.today ? "اليوم" : `يوم (${data?.date || selectedDate})`}`
+                  : `Bookings for ${data?.date === data?.today ? "Today" : data?.date || selectedDate}`}
               </h2>
               <div className="flex gap-1 overflow-x-auto text-xs">
                 {["ALL", "CONFIRMED", "WASHING", "COMPLETED", "CANCELLED", "NO_SHOW"].map(
