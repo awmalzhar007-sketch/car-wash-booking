@@ -354,6 +354,8 @@ export default function StaffDashboardPage() {
     completedBookings.length > 0
       ? Math.round(completedRevenue / completedBookings.length)
       : 0;
+  const monthlyRevenue = Number(data?.financials?.monthlyRevenue) || 0;
+  const monthlyCompletedCount = Number(data?.financials?.monthlyCompletedCount) || 0;
 
   // Breakdown by Service from completed bookings
   const serviceRevenueMap: Record<
@@ -460,7 +462,7 @@ export default function StaffDashboardPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {/* KPI Counts Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <p className="text-xs font-semibold text-slate-400">
               {language === "ar" ? "إجمالي اليوم" : "Today's Total"}
@@ -504,6 +506,25 @@ export default function StaffDashboardPage() {
             </p>
             <p className="text-2xl font-black mt-1">
               {formatPrice(completedRevenue)}
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewTab("DAILY_SUMMARY")}
+            className={`text-start rounded-2xl p-4 shadow-sm transition-all border ${
+              viewTab === "DAILY_SUMMARY"
+                ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-400/40"
+                : "bg-blue-50 hover:bg-blue-100/80 border-blue-200 text-blue-900"
+            }`}
+          >
+            <p className={`text-xs font-bold flex items-center gap-1 ${
+              viewTab === "DAILY_SUMMARY" ? "text-blue-100" : "text-blue-700"
+            }`}>
+              <TrendingUp className="w-3.5 h-3.5" />
+              {t("staff_monthly_revenue")}
+            </p>
+            <p className="text-2xl font-black mt-1">
+              {formatPrice(monthlyRevenue)}
             </p>
           </button>
         </div>
@@ -1065,18 +1086,23 @@ export default function StaffDashboardPage() {
                     {t("staff_summary_desc")}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-800/90 border border-slate-700 rounded-xl p-3 px-4 shrink-0">
+                <div className="flex items-center gap-4 bg-slate-800/90 border border-slate-700 rounded-xl p-3 px-4 shrink-0 flex-wrap">
                   <div className="text-start sm:text-end">
                     <p className="text-[11px] text-slate-400 font-semibold">{t("staff_completed_revenue")}</p>
                     <p className="text-xl font-black text-emerald-400">{formatPrice(completedRevenue)}</p>
+                  </div>
+                  <div className="hidden sm:block h-8 w-px bg-slate-700" />
+                  <div className="text-start sm:text-end">
+                    <p className="text-[11px] text-slate-400 font-semibold">{t("staff_monthly_revenue")}</p>
+                    <p className="text-xl font-black text-blue-400">{formatPrice(monthlyRevenue)}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Financial & Operational KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Card 1: Completed Revenue */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Card 1: Completed Revenue Today */}
               <div className="bg-white border border-emerald-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 left-0 h-1 bg-emerald-500" />
                 <div className="flex items-center justify-between">
@@ -1093,8 +1119,30 @@ export default function StaffDashboardPage() {
                 <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   {language === "ar"
-                    ? `محصل من ${completedBookings.length} سيارة مكتملة`
-                    : `Collected from ${completedBookings.length} completed washes`}
+                    ? `اليوم: ${completedBookings.length} سيارة مكتملة`
+                    : `Today: ${completedBookings.length} completed washes`}
+                </p>
+              </div>
+
+              {/* Card 2: Monthly Revenue (New) */}
+              <div className="bg-white border border-blue-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 left-0 h-1 bg-blue-600" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">
+                    {t("staff_monthly_revenue")}
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-3xl font-black text-slate-900 mt-2">
+                  {formatPrice(monthlyRevenue)}
+                </p>
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                  {language === "ar"
+                    ? `إجمالي الشهر: ${monthlyCompletedCount} سيارة`
+                    : `This month: ${monthlyCompletedCount} completed`}
                 </p>
               </div>
 

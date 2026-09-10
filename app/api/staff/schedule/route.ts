@@ -82,6 +82,24 @@ export async function GET(request: NextRequest) {
       .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const potentialRevenue = completedRevenue + washingRevenue + confirmedRevenue;
 
+    // Monthly calculation (current month YYYY-MM)
+    const currentMonthPrefix = today.slice(0, 7);
+    const monthlyCompletedBookings = await prisma.booking.findMany({
+      where: {
+        branchId: branch.id,
+        bookingDate: { startsWith: currentMonthPrefix },
+        status: "COMPLETED",
+      },
+      select: {
+        totalPrice: true,
+      },
+    });
+    const monthlyRevenue = monthlyCompletedBookings.reduce(
+      (sum, b) => sum + (b.totalPrice || 0),
+      0
+    );
+    const monthlyCompletedCount = monthlyCompletedBookings.length;
+
     const financials = {
       completedRevenue,
       washingRevenue,
@@ -92,6 +110,8 @@ export async function GET(request: NextRequest) {
         completedBookings.length > 0
           ? Math.round(completedRevenue / completedBookings.length)
           : 0,
+      monthlyRevenue,
+      monthlyCompletedCount,
     };
 
     // Format staff booking details
