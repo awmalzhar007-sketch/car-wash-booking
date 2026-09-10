@@ -28,13 +28,12 @@ import {
   Sparkles,
   Trophy,
   CalendarDays,
-  Edit2,
   Search,
   Filter,
   DollarSign,
 } from "lucide-react";
 import { BookingStatus, StaffBookingDetail } from "@/lib/types";
-import { formatCurrency, isValidEgyptianPhone, parseTimeToMinutes, formatMinutesToTime } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { translateCarWashText } from "@/lib/i18n/translator";
@@ -71,18 +70,6 @@ export default function StaffDashboardPage() {
 
   // Search filter for bookings
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Edit Booking Modal state
-  const [editingBooking, setEditingBooking] = useState<any | null>(null);
-  const [editCustomerName, setEditCustomerName] = useState("");
-  const [editCustomerPhone, setEditCustomerPhone] = useState("");
-  const [editBookingDate, setEditBookingDate] = useState("");
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editSelectedServiceIds, setEditSelectedServiceIds] = useState<string[]>([]);
-  const [editAssignedBayId, setEditAssignedBayId] = useState("");
-  const [editStatus, setEditStatus] = useState<string>("CONFIRMED");
-  const [savingEdit, setSavingEdit] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
 
   // Monthly Revenue Dashboard state
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
@@ -272,57 +259,6 @@ export default function StaffDashboardPage() {
       setMonthlyRevenueError(err.message || "Failed to load monthly revenue");
     } finally {
       setMonthlyRevenueLoading(false);
-    }
-  };
-
-  const handleOpenEditBooking = (booking: any) => {
-    setEditingBooking(booking);
-    setEditCustomerName(booking.customerName || "");
-    setEditCustomerPhone(booking.customerPhone || "");
-    setEditBookingDate(booking.bookingDate || "");
-    setEditStartTime(booking.startTime || "");
-    setEditSelectedServiceIds((booking.services || []).map((s: any) => s.id));
-    setEditAssignedBayId(booking.assignedBayId || (data?.bays?.[0]?.id || ""));
-    setEditStatus(booking.status || "CONFIRMED");
-    setEditError(null);
-    if (services.length === 0 && !servicesLoading) {
-      loadServices();
-    }
-  };
-
-  const handleSaveEditBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBooking) return;
-    try {
-      setSavingEdit(true);
-      setEditError(null);
-      const res = await fetch(`/api/staff/bookings/${editingBooking.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName: editCustomerName.trim(),
-          customerPhone: editCustomerPhone.trim(),
-          bookingDate: editBookingDate,
-          startTime: editStartTime,
-          selectedServiceIds: editSelectedServiceIds,
-          assignedBayId: editAssignedBayId,
-          status: editStatus,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to update booking");
-      }
-      setEditingBooking(null);
-      setSelectedBooking(null);
-      await loadSchedule(true);
-      if (viewTab === "MONTHLY_REVENUE" || viewTab === "DAILY_SUMMARY") {
-        await loadMonthlyRevenue(selectedMonth);
-      }
-    } catch (err: any) {
-      setEditError(err.message);
-    } finally {
-      setSavingEdit(false);
     }
   };
 
@@ -872,32 +808,19 @@ export default function StaffDashboardPage() {
                                   <span className="font-bold text-slate-900 text-xs">
                                     {booking.bookingNumber}
                                   </span>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenEditBooking(booking);
-                                      }}
-                                      className="p-1 hover:bg-white/80 rounded text-slate-600 hover:text-blue-600 transition-colors"
-                                      title={t("staff_action_edit_booking")}
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                    </button>
-                                    <span
-                                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                        booking.status === "CONFIRMED"
-                                          ? "bg-blue-600 text-white"
-                                          : booking.status === "WASHING"
-                                          ? "bg-amber-500 text-white"
-                                          : booking.status === "COMPLETED"
-                                          ? "bg-emerald-600 text-white"
-                                          : "bg-slate-300 text-slate-700"
-                                      }`}
-                                    >
-                                      {booking.status}
-                                    </span>
-                                  </div>
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                      booking.status === "CONFIRMED"
+                                        ? "bg-blue-600 text-white"
+                                        : booking.status === "WASHING"
+                                        ? "bg-amber-500 text-white"
+                                        : booking.status === "COMPLETED"
+                                        ? "bg-emerald-600 text-white"
+                                        : "bg-slate-300 text-slate-700"
+                                    }`}
+                                  >
+                                    {booking.status}
+                                  </span>
                                 </div>
                                 <p className="font-semibold text-slate-800 mt-1 truncate">
                                   {booking.customerName}
@@ -1048,18 +971,6 @@ export default function StaffDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditBooking(b);
-                        }}
-                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-blue-200"
-                        title={t("staff_action_edit_booking")}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{t("staff_action_edit_booking")}</span>
-                      </button>
                       <ChevronRight className={`w-4 h-4 text-slate-400 ${dir === "rtl" ? "rotate-180" : ""}`} />
                     </div>
                   </div>
@@ -2238,20 +2149,6 @@ export default function StaffDashboardPage() {
                 )}
               </div>
 
-              {/* Edit Full Booking Details Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const b = selectedBooking;
-                  setSelectedBooking(null);
-                  handleOpenEditBooking(b);
-                }}
-                className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors border border-blue-200 shadow-2xs"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>{t("staff_action_edit_booking")}</span>
-              </button>
-
               {/* Status transition action buttons */}
               <div className="space-y-2 pt-1">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -2331,299 +2228,6 @@ export default function StaffDashboardPage() {
                   </p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* EDIT BOOKING MODAL */}
-        {editingBooking && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-slate-100">
-              <div className="flex justify-between items-start border-b border-slate-100 pb-3">
-                <div>
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                    {t("staff_edit_booking_title")}
-                  </span>
-                  <h3 className="text-xl font-black text-slate-900 mt-1">
-                    {editingBooking.bookingNumber}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    {language === "ar" ? "تعديل تفاصيل الحجز والخدمات والمحطة" : "Update booking details, services & wash bay"}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setEditingBooking(null)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {editError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs flex items-start gap-2.5 animate-shake">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
-                  <div>
-                    <span className="font-bold block">{t("staff_conflict_detected")}</span>
-                    <span className="text-[11px]">{editError}</span>
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveEditBooking} className="space-y-4">
-                {/* Customer Information */}
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
-                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    {language === "ar" ? "بيانات العميل" : "Customer Information"}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
-                        {t("fullName")}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={editCustomerName}
-                        onChange={(e) => setEditCustomerName(e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="Ahmed Mohamed"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="block text-xs font-semibold text-slate-600">
-                          {t("staff_change_phone")}
-                        </label>
-                        {editCustomerPhone && (
-                          <span
-                            className={`text-[10px] font-bold ${
-                              isValidEgyptianPhone(editCustomerPhone)
-                                ? "text-emerald-600"
-                                : "text-amber-600"
-                            }`}
-                          >
-                            {isValidEgyptianPhone(editCustomerPhone)
-                              ? (language === "ar" ? "✓ رقم مصري صحيح" : "✓ Valid Egyptian")
-                              : (language === "ar" ? "رقم دولي / غير قياسي" : "International / Non-standard")}
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="tel"
-                        required
-                        dir="ltr"
-                        value={editCustomerPhone}
-                        onChange={(e) => setEditCustomerPhone(e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="01012345678"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Schedule & Bay Assignment */}
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
-                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    {language === "ar" ? "الموعد والمحطة" : "Schedule & Wash Bay"}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
-                        {t("date")}
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={editBookingDate}
-                        onChange={(e) => setEditBookingDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
-                        {t("start_time")}
-                      </label>
-                      <input
-                        type="time"
-                        required
-                        value={editStartTime}
-                        onChange={(e) => setEditStartTime(e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
-                        {language === "ar" ? "محطة الغسيل" : "Assigned Bay"}
-                      </label>
-                      <select
-                        value={editAssignedBayId}
-                        onChange={(e) => setEditAssignedBayId(e.target.value)}
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      >
-                        {(data?.bays || []).map((bay: any) => (
-                          <option key={bay.id} value={bay.id}>
-                            {bay.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Car Wash / Service Selection */}
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      {t("staff_change_service")}
-                    </p>
-                    <span className="text-[11px] text-blue-600 font-semibold">
-                      {editSelectedServiceIds.length} {language === "ar" ? "محددة" : "selected"}
-                    </span>
-                  </div>
-
-                  {servicesLoading ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                    </div>
-                  ) : services.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-2">
-                      {language === "ar" ? "لا توجد خدمات متاحة" : "No services available"}
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                      {services.map((s: any) => {
-                        const isChecked = editSelectedServiceIds.includes(s.id);
-                        return (
-                          <label
-                            key={s.id}
-                            className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                              isChecked
-                                ? "bg-blue-50/80 border-blue-300 text-blue-900 font-semibold shadow-2xs"
-                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100/50"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditSelectedServiceIds((prev) => [...prev, s.id]);
-                                  } else {
-                                    setEditSelectedServiceIds((prev) =>
-                                      prev.filter((id) => id !== s.id)
-                                    );
-                                  }
-                                }}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                              />
-                              <span>{tServiceName(s.name)}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[11px]">
-                              <span className="text-slate-400">
-                                {s.durationMinutes} {t("mins")}
-                              </span>
-                              <span className="font-bold text-slate-900">
-                                {formatPrice(s.price)}
-                              </span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Real-time Recalculated Summary Box */}
-                  {(() => {
-                    const selServices = services.filter((s: any) =>
-                      editSelectedServiceIds.includes(s.id)
-                    );
-                    const calcDuration = selServices.reduce(
-                      (acc: number, s: any) => acc + (s.durationMinutes || 0),
-                      0
-                    );
-                    const calcPrice = selServices.reduce(
-                      (acc: number, s: any) => acc + (s.price || 0),
-                      0
-                    );
-                    let projectedEnd = "";
-                    if (editStartTime && calcDuration > 0) {
-                      const startMins = parseTimeToMinutes(editStartTime);
-                      if (!isNaN(startMins)) {
-                        projectedEnd = formatMinutesToTime(startMins + calcDuration);
-                      }
-                    }
-
-                    return (
-                      <div className="bg-white p-3 rounded-xl border border-blue-200/80 shadow-2xs space-y-1.5 text-xs">
-                        <div className="flex justify-between items-center text-slate-600">
-                          <span>{t("staff_recalculated_duration")}:</span>
-                          <span className="font-bold text-slate-900">
-                            {calcDuration} {t("mins")}{" "}
-                            {projectedEnd && (
-                              <span className="text-blue-600 font-semibold">
-                                ({editStartTime} → {projectedEnd})
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-slate-600 pt-1 border-t border-slate-100">
-                          <span>{t("staff_recalculated_price")}:</span>
-                          <span className="font-black text-blue-600 text-sm">
-                            {formatPrice(calcPrice)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Status Selection */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {t("my_booking_status_label")}
-                  </label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
-                  >
-                    <option value="CONFIRMED">{t("status_CONFIRMED")}</option>
-                    <option value="WASHING">{t("status_IN_PROGRESS")}</option>
-                    <option value="COMPLETED">{t("status_COMPLETED")}</option>
-                    <option value="CANCELLED">{t("status_CANCELLED")}</option>
-                    <option value="NO_SHOW">{t("status_NO_SHOW")}</option>
-                  </select>
-                </div>
-
-                {/* Submit & Cancel Buttons */}
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingBooking(null)}
-                    disabled={savingEdit}
-                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition-colors"
-                  >
-                    {language === "ar" ? "إلغاء" : "Cancel"}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingEdit || editSelectedServiceIds.length === 0}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                  >
-                    {savingEdit ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>{t("staff_save_changes")}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         )}
