@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/session";
 import {
   formatDisplayTime,
+  formatDisplayDate,
   formatMinutesToTime,
   getTodayDateString,
   parseTimeToMinutes,
@@ -49,11 +50,13 @@ export async function GET(request: NextRequest) {
     }
 
     const today = getTodayDateString();
+    const dateParam = searchParams.get("date");
+    const activeDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : today;
 
     const bookings = await prisma.booking.findMany({
       where: {
         branchId: branch.id,
-        bookingDate: today,
+        bookingDate: activeDate,
       },
       include: {
         assignedBay: true,
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
       orderBy: { startTime: "asc" },
     });
 
-    // Compute status counts for today
+    // Compute status counts for the selected date
     const counts = {
       total: bookings.length,
       confirmed: bookings.filter((b) => b.status === "CONFIRMED").length,
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
       noShow: bookings.filter((b) => b.status === "NO_SHOW").length,
     };
 
-    // Compute financial summary for today based on completed bookings
+    // Compute financial summary for the selected date based on completed bookings
     const completedBookings = bookings.filter((b) => b.status === "COMPLETED");
     const completedRevenue = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const washingRevenue = bookings
@@ -82,8 +85,8 @@ export async function GET(request: NextRequest) {
       .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const potentialRevenue = completedRevenue + washingRevenue + confirmedRevenue;
 
-    // Monthly calculation (current month YYYY-MM)
-    const currentMonthPrefix = today.slice(0, 7);
+    // Monthly calculation (for the active month YYYY-MM)
+    const currentMonthPrefix = activeDate.slice(0, 7);
     const monthlyCompletedBookings = await prisma.booking.findMany({
       where: {
         branchId: branch.id,
@@ -91,14 +94,35 @@ export async function GET(request: NextRequest) {
         status: "COMPLETED",
       },
       select: {
+        bookingDate: true,
         totalPrice: true,
       },
+      orderBy: { bookingDate: "asc" },
     });
     const monthlyRevenue = monthlyCompletedBookings.reduce(
       (sum, b) => sum + (b.totalPrice || 0),
       0
     );
     const monthlyCompletedCount = monthlyCompletedBookings.length;
+
+    // Group completed bookings by day in the month
+    const dayMap: Record<string, { date: string; revenue: number; count: number }> = {};
+    monthlyCompletedBookings.forEach((b) => {
+      if (!dayMap[b.bookingDate]) {
+        dayMap[b.bookingDate] = { date: b.bookingDate, revenue: 0, count: 0 };
+      }
+      dayMap[b.bookingDate].revenue += b.totalPrice || 0;
+      dayMap[b.bookingDate].count += 1;
+    });
+
+    // Find the best day in the month (highest revenue)
+    const dayList = Object.values(dayMap).sort((a, b) => a.date.localeCompare(b.date));
+    let bestDay: { date: string; revenue: number; count: number } | null = null;
+    dayList.forEach((d) => {
+      if (!bestDay || d.revenue > (bestDay as any).revenue || (d.revenue === (bestDay as any).revenue && d.count > (bestDay as any).count)) {
+        bestDay = d;
+      }
+    });
 
     const financials = {
       completedRevenue,
@@ -112,6 +136,19 @@ export async function GET(request: NextRequest) {
           : 0,
       monthlyRevenue,
       monthlyCompletedCount,
+      bestDay: bestDay
+        ? {
+            date: (bestDay as any).date,
+            revenue: (bestDay as any).revenue,
+            count: (bestDay as any).count,
+            displayDate: formatDisplayDate((bestDay as any).date),
+          }
+        : null,
+      monthlyDays: dayList.map((d) => ({
+        ...d,
+        displayDate: formatDisplayDate(d.date),
+        isBestDay: bestDay ? d.date === (bestDay as any).date : false,
+      })),
     };
 
     // Format staff booking details
@@ -261,7 +298,8 @@ export async function GET(request: NextRequest) {
         bayNumber: b.bayNumber,
         name: b.name,
       })),
-      date: today,
+      date: activeDate,
+      today,
       counts,
       financials,
       timeline,
